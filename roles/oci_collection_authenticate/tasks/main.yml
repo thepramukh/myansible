@@ -1,0 +1,89 @@
+---
+# tasks file for oci_authenticate
+- name: 'What is my number'
+  delegate_to: 'localhost'
+  when: >
+    oci_local_username is undefined
+  shell: >
+    cat /proc/$$/loginuid
+  register: 'loginuid'
+  changed_when: 'false'
+- name: 'What is my name'
+  delegate_to: 'localhost'
+  when: >
+    oci_local_username is undefined
+  getent:
+    database: 'passwd'
+    key: '{{ loginuid.stdout }}'
+- name: 'What is user provided name'
+  delegate_to: 'localhost'
+  when: >
+    oci_local_username is defined and
+    oci_local_username != '' and
+    oci_local_username is search('^[a-z]')
+  getent:
+    database: 'passwd'
+    key: '{{ oci_local_username }}'
+- name: 'Remember our name'
+  delegate_to: 'localhost'
+  when: >
+    oci_local_username is undefined
+  set_fact:
+    oci_local_username: '{{ getent_passwd.keys()[0] }}'
+- name: 'Remember our home directory'
+  delegate_to: 'localhost'
+  when: >
+    oci_local_username is defined and
+    oci_local_username != '' and
+    oci_local_username is search('^[a-z]')
+  set_fact:
+    oci_local_homedir: '{{ getent_passwd[oci_local_username][4] }}'
+- name: 'Does the user have {{ oci_local_homedir }}/.oci/config?'
+  delegate_to: 'localhost'
+  failed_when: >
+    not results.stat.exists
+  stat:
+    path: '{{ oci_local_homedir }}/.oci/config'
+  register: 'results'
+- name: 'Read tenancy configuration'
+  delegate_to: 'localhost'
+  set_fact:
+    oci_config_user: "{{ lookup('ini', 'user section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
+    oci_config_fingerprint: "{{ lookup('ini', 'fingerprint section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
+    oci_config_key_file: "{{ lookup('ini', 'key_file section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
+    oci_config_tenancy: "{{ lookup('ini', 'tenancy section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
+    oci_config_region: "{{ lookup('ini', 'region section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
+#- name: 'Fetch Region Facts'
+#  collections:
+#    - 'oracle.oci'
+#  delegate_to: 'localhost'
+#  oci_identity_region_facts:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#  register: 'oci_region_facts'
+#- name: 'Fetch Tenancy Facts'
+#  collections:
+#    - 'oracle.oci'
+#  delegate_to: 'localhost'
+#  oci_identity_tenancy_facts:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#    tenancy_id: '{{ oci_config_tenancy }}'
+#  register: 'oci_tenancy_facts'
+#- name: 'Fetch Service Facts'
+#  collections:
+#    - 'oracle.oci'
+#  delegate_to: 'localhost'
+#  oci_network_service_facts:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#  register: 'oci_service_facts'
+#- name: 'Remember our facts'
+#  delegate_to: 'localhost'
+#  set_fact:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#    oci_region_facts: '{{ oci_region_facts }}'
+#    oci_tenancy_facts: '{{ oci_tenancy_facts }}'
+#    oci_service_facts: '{{ oci_service_facts }}'
+#    oci_service_ocid: '{{ oci_service_facts | json_query ( "services[0].id" ) | trim }}'

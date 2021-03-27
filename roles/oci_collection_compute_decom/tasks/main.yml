@@ -1,0 +1,32 @@
+---
+# tasks file for oci_collection_compute_decom
+- name: "Gather tenancy compartments"
+  oci_identity_compartment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    parent_compartment_id: "{{ oci_config_tenancy }}"
+  register: compartments_ocid
+
+- name: "setting compartment facts"
+  no_log: True
+  set_fact:
+    compartments: '{{ compartments | default({}) | combine ( {item.name : item.id} ) }}'
+  with_items: '{{ compartments_ocid | json_query ( "compartments[*]" ) }}'
+
+- name: List instances
+  oci_compute_instance_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item  }}"
+  with_items: '{{ compartments.values() }}'
+  register: compute_list
+
+- name: "setting compute facts"
+  set_fact:
+    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.compartment_id]} ) }}'
+  with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
+
+- name: "show output"
+  debug:
+    var=compute
+

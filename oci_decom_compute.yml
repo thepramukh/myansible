@@ -1,0 +1,10 @@
+---
+# tasks file for oci_authenticate
+- name: My Learning tasks
+  gather_facts: "false"
+  hosts: localhost
+  collections:
+    - 'oracle.oci'
+  roles:
+    - role: oci_collection_authenticate
+    - role: oci_collection_compute_decom

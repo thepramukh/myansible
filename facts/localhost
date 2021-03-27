@@ -1,0 +1,12 @@
+{
+    "getent_passwd": {
+        "pgrewal": [
+            "x", 
+            "1000", 
+            "1000", 
+            "Punit Grewal", 
+            "/home/pgrewal", 
+            "/bin/bash"
+        ]
+    }
+}
