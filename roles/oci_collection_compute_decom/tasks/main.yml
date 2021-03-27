@@ -27,10 +27,7 @@
 
 - name: "creating compute dict from facts"
   set_fact:
-    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, \
-                                                               | compartments[item.compartment_id], \
-                                                               | item.primary_private_ip, item.primary_public_ip, \
-                                                               | item.region]} ) }}'
+    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, \compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region]} ) }}'
   with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
 
 - name: "show output"
