@@ -1,4 +1,0 @@
----
-# defaults file for oci_collection_compute_decom
-oci_tenancy: auceoai01
-oci_datacenter: phx

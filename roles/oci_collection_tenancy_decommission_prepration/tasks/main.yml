@@ -1,0 +1,64 @@
+---
+# tasks file for oci_collection_compute_decom
+- name: "Gathering tenancy compartments facts"
+  oci_identity_compartment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    parent_compartment_id: "{{ oci_config_tenancy }}"
+  register: oci_compartment_id
+  
+- name: "creating compartment dict from facts"
+  set_fact:
+    compartments: '{{ compartments | default({oci_config_tenancy: "root"}) | combine ( {item.id : item.name} ) }}'
+  loop: '{{ oci_compartment_id | json_query ( "compartments[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Gathering tenancy ad facts"
+  oci_identity_availability_domain_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ oci_config_tenancy }}"
+  register: oci_ad_id
+  
+- name: "creating ad dict from facts"
+  set_fact:
+    ads: '{{ ads | default({}) | combine ( {item.id : item.name} ) }}'
+  loop: '{{ oci_ad_id | json_query ( "availability_domains[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+# - name: 'Starting network playbook'
+#   include_tasks: 'network.yml'
+
+- name: 'Starting drg playbook'
+  include_tasks: 'drg.yml'
+
+- name: 'Starting lbaas volume playbook'
+  include_tasks: 'lbaas.yml'
+
+- name: 'Starting block volume playbook'
+  include_tasks: 'blockvol.yml'
+
+- name: 'Starting object volume playbook'
+  include_tasks: 'object.yml'
+
+- name: 'Starting fss playbook'
+  include_tasks: 'fss.yml'
+
+# - name: 'Starting compute playbook'
+#   include_tasks: 'compute.yml'
+
+- name: 'Starting dbaas playbook'
+  include_tasks: 'dbaas.yml'
+
+- name: 'Starting iam playbook'
+  include_tasks: 'iam.yml'
+
+
+
+
+
+
+
+

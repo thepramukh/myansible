@@ -1,0 +1,20 @@
+- name: "Gathering all available compute instances in tenancy"
+  oci_compute_instance_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: compute_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating compute dict from json data"
+  set_fact:
+    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region]} ) }}'
+  with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "show compute dictionary data"
+  debug:
+    var=compute

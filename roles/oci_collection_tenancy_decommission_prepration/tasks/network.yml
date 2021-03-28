@@ -1,0 +1,216 @@
+- name: "Gathering all vcn in tenancy"
+  oci_network_vcn_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: vcn_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating vcn dict from json data"
+  set_fact:
+    vcn: '{{ vcn | default({}) | combine ( {item.id : [item.display_name, item.cidr_block, item.dns_label, compartments[item.compartment_id], item.lifecycle_state, item.vcn_domain_name, item.compartment_id]} ) }}'
+  with_items: '{{ vcn_list | json_query ( "results[*].vcns[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering subnets"
+  oci_network_subnet_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: subnet_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating subnet dict from json data"
+  set_fact:
+    subnet: '{{ subnet | default({}) | combine ( {item.id : [item.display_name, item.cidr_block, item.dns_label, compartments[item.compartment_id], item.subnet_domain_name, vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ subnet_list | json_query ( "results[*].subnets[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering internet gateway"
+  oci_network_internet_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: igw_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating internet gateway dict from json data"
+  set_fact:
+    igw: '{{ igw | default({}) | combine ( {item.id : [item.display_name, item.is_enabled, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ igw_list | json_query ( "results[*].internet_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering route table"
+  oci_network_route_table_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: rt_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating route table dict from json data"
+  set_fact:
+    route_table: '{{ route_table | default({}) | combine ( {item.id : [item.display_name, item.route_rules|length, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering security list"
+  oci_network_security_list_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: sl_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating security list dict from json data"
+  set_fact:
+    security_list: '{{ security_list | default({}) | combine ( {item.id : [item.display_name, "Egress: " + item.egress_security_rules|length|string, "Ingress: " + item.ingress_security_rules|length|string, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering network security group"
+  oci_network_security_group_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: nsg_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating network security group dict from json data"
+  set_fact:
+    nsg: '{{ nsg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ nsg_list | json_query ( "results[*].network_security_groups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering dhcp options"
+  oci_network_dhcp_options_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: dhcp_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating dhcp dict from json data"
+  set_fact:
+    dhcp: '{{ dhcp | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.options]} ) }}'
+  with_items: '{{ dhcp_list | json_query ( "results[*].dhcp_options[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering local peering gateway connections"
+  oci_network_local_peering_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: lpg_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating dhcp dict from json data"
+  set_fact:
+    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], "Corss Tenancy: " + item.is_cross_tenancy_peering|string, "Advertised Cidr: "+ item.peer_advertised_cidr, "Status: " + item.peering_status, route_table[item.route_table_id][0] ]} ) }}'
+  with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering NAT gateway"
+  oci_network_nat_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: ngw_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating NAT gateway dict from json data"
+  set_fact:
+    ngw: '{{ ngw | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.nat_ip, "Block Traffic: " + item.block_traffic|string ]} ) }}'
+  with_items: '{{ ngw_list | json_query ( "results[*].nat_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering Private IP"
+  oci_network_private_ip_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    subnet_id: "{{ item.key }}"
+  loop: '{{ subnet | dict2items }}'
+  register: pvtip_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating Private IP dict from json data"
+  set_fact:
+    pvtip: '{{ pvtip | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], item.hostname_label, item.ip_address, "is_primary: " + item.is_primary|string, subnet[item.subnet_id][0] ]} ) }}'
+  with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering Public IPs"
+  oci_network_public_ip_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    scope: AVAILABILITY_DOMAIN
+    availability_domain: "{{ item[1].value }}"
+    compartment_id: "{{ item[0].key }}"
+  with_nested: 
+    - '{{ compartments | dict2items }}'
+    - '{{ ads | dict2items }}'
+  register: pubip_list
+  loop_control:
+    label: "{{ item[0].value, item[1].value }}"
+
+- name: "creating Public IP dict from json data"
+  set_fact: 
+    pubip: '{{ pubip | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], item.ip_address, pvtip[item.private_ip_id][0] ]} ) }}'
+  with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering Service gateway"
+  oci_network_service_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[6]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: sgw_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating Service gateway dict from json data"
+  set_fact:
+    sgw: '{{ sgw | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.services | json_query ( "[*].service_name" ), "Block Traffic: " + item.block_traffic|string ]} ) }}'
+  with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
