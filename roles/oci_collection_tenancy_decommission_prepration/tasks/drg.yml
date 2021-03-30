@@ -1,0 +1,37 @@
+- name: "Gathering DRG details"
+  oci_network_drg_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: drg_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating DRG dict from json data"
+  set_fact:
+    drg: '{{ drg | default({}) | combine ( {item.id : [ item.display_name, item.lifecycle_state, compartments[item.compartment_id], item.compartment_id]} ) }}'
+  with_items: '{{ drg_list | json_query ( "results[*].drgs[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering DRG attachment details"
+  oci_network_drg_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: drgattachment_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating DRG dict from json data"
+  set_fact:
+    drgattach: '{{ drgattach | default({}) | combine ( {item.id : [ item.display_name, drg[item.drg_id][0], compartments[item.compartment_id], route_table[item.route_table_id][0], vcn[item.vcn_id][0] ]} ) }}'
+  with_items: '{{ drgattachment_list | json_query ( "results[*].drg_attachments[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: show output
+  debug:
+    var: drgattach

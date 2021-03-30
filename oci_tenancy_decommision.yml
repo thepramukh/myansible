@@ -7,4 +7,5 @@
     - 'oracle.oci'
   roles:
     - role: oci_collection_authenticate
-    - role: oci_collection_compute_decom
+    - role: oci_collection_tenancy_decommission_prepration
+    - role: oci_collection_tenancy_decommission_execution

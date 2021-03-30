@@ -28,8 +28,8 @@
   loop_control:
     label: "{{ item.name }}"
 
-# - name: 'Starting network playbook'
-#   include_tasks: 'network.yml'
+- name: 'Starting network playbook'
+  include_tasks: 'network.yml'
 
 - name: 'Starting drg playbook'
   include_tasks: 'drg.yml'
@@ -40,8 +40,8 @@
 - name: 'Starting block volume playbook'
   include_tasks: 'blockvol.yml'
 
-- name: 'Starting object volume playbook'
-  include_tasks: 'object.yml'
+- name: 'Starting bucket volume playbook'
+  include_tasks: 'bucket.yml'
 
 - name: 'Starting fss playbook'
   include_tasks: 'fss.yml'
