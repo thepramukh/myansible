@@ -31,8 +31,8 @@
 - name: 'Starting network playbook'
   include_tasks: 'network.yml'
 
-- name: 'Starting drg playbook'
-  include_tasks: 'drg.yml'
+# - name: 'Starting drg playbook'
+#   include_tasks: 'drg.yml'
 
 - name: 'Starting lbaas volume playbook'
   include_tasks: 'lbaas.yml'
