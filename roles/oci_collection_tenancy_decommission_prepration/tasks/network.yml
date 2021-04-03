@@ -141,7 +141,7 @@
 
 - name: "creating dhcp dict from json data"
   set_fact:
-    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], "Corss Tenancy: " + item.is_cross_tenancy_peering|string, "Advertised Cidr: "+ item.peer_advertised_cidr, "Status: " + item.peering_status, route_table[item.route_table_id][0] ]} ) }}'
+    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], "Cross Tenancy: " + item.is_cross_tenancy_peering|string, "Advertised Cidr: "+ item.peer_advertised_cidr, "Status: " + item.peering_status, route_table[item.route_table_id][0] ]} ) }}'
   with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -240,16 +240,16 @@
   with_items:
     - { header: " -- VCNs -- ", data: "{{ vcn }}" }
     - { header: " -- Subnets -- ", data: "{{ subnet }}" }
-    - { header: '---Network-DHCP---', data: "{{ dhcp }}" }
-    - { header: '---Network-Route Table---', data: "{{ route_table }}" }
-    - { header: '---Network-Security Lists---', data: "{{ security_list }}" }
-    - { header: '---Network-NSGs---', data: "{{ nsg }}" }
-    - { header: '---Network-Internet Gateway---', data: "{{ igw }}" }
-    - { header: '---Network-NAT Gateway---', data: "{{ ngw }}" }
-    - { header: '---Network-Service Gateway---', data: "{{ sgw }}" }
-    - { header: '---Network-Private IPs---', data: "{{ pvtip }}" }
-    - { header: '---Network-Public IPs---', data: "{{ pubip }}" }
-    - { header: '---Network-Local Peering Gateway---', data: "{{ lpg }}" }
+    - { header: '-- DHCP --', data: "{{ dhcp }}" }
+    - { header: '-- Route Table --', data: "{{ route_table }}" }
+    - { header: '-- Security Lists --', data: "{{ security_list }}" }
+    - { header: '-- NSGs --', data: "{{ nsg }}" }
+    - { header: '-- Internet Gateway --', data: "{{ igw }}" }
+    - { header: '-- NAT Gateway --', data: "{{ ngw }}" }
+    - { header: '-- Service Gateway --', data: "{{ sgw }}" }
+    - { header: '-- Private IPs --', data: "{{ pvtip }}" }
+    - { header: '-- Public IPs --', data: "{{ pubip }}" }
+    - { header: '-- Local Peering Gateway --', data: "{{ lpg }}" }
   loop_control:
     label: '{{ item.header }}'
     

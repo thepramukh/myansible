@@ -10,11 +10,30 @@
 
 - name: "creating compute dict from json data"
   set_fact:
-    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region]} ) }}'
+    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region, item.defined_tags]} ) }}'
   with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: "show compute dictionary data"
-  debug:
-    var=compute
+
+- name: Creates directory for output logging
+  file:
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
+    state: directory
+
+- name: logging output to a file.
+  copy:
+    content: "================== COMPUTE.LOG ==================\n"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.log"
+
+- name: Appending data to log file.
+  blockinfile:
+    block: "{{ '\n' + item.data | to_nice_json + '\n\n' }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.log"
+    marker: <!-- {mark} -->
+    marker_begin: '{{ item.header }}'
+    marker_end: 'END'
+  with_items:
+    - { header: " -- Compute -- ", data: "{{ compute }}" }
+  loop_control:
+    label: '{{ item.header }}'

@@ -28,32 +28,32 @@
   loop_control:
     label: "{{ item.name }}"
 
-- name: 'Starting network playbook'
-  include_tasks: 'network.yml'
+# - name: 'Starting network playbook'
+#   include_tasks: 'network.yml'
 
 # - name: 'Starting drg playbook'
 #   include_tasks: 'drg.yml'
 
-- name: 'Starting lbaas volume playbook'
-  include_tasks: 'lbaas.yml'
+# - name: 'Starting lbaas volume playbook'
+#   include_tasks: 'lbaas.yml'
 
-- name: 'Starting block volume playbook'
-  include_tasks: 'blockvol.yml'
+# - name: 'Starting block volume playbook'
+#   include_tasks: 'blockvol.yml'
 
-- name: 'Starting bucket volume playbook'
-  include_tasks: 'bucket.yml'
+# - name: 'Starting bucket volume playbook'
+#   include_tasks: 'bucket.yml'
 
-- name: 'Starting fss playbook'
-  include_tasks: 'fss.yml'
+# - name: 'Starting fss playbook'
+#   include_tasks: 'fss.yml'
 
-# - name: 'Starting compute playbook'
-#   include_tasks: 'compute.yml'
+- name: 'Starting compute playbook'
+  include_tasks: 'compute.yml'
 
-- name: 'Starting dbaas playbook'
-  include_tasks: 'dbaas.yml'
+# - name: 'Starting dbaas playbook'
+#   include_tasks: 'dbaas.yml'
 
-- name: 'Starting iam playbook'
-  include_tasks: 'iam.yml'
+# - name: 'Starting iam playbook'
+#   include_tasks: 'iam.yml'
 
 
 
