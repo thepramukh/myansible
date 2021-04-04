@@ -1,0 +1,20 @@
+- name: "Gathering all available Block Volume details in tenancy"
+  oci_blockstorage_volume_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: blockvolume_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating blockvolume dict from json data"
+  set_fact:
+    blockvolume: '{{ blockvolume | default({}) | combine ( {item.id : [item.display_name, item.availability_domain, "BlockVolume Size: "+ item.size_in_gbs | string] }) }}'
+  with_items: '{{ blockvolume_list | json_query ( "results[*].volumes[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "show blockvolume dictionary data"
+  debug:
+    var=blockvolume
