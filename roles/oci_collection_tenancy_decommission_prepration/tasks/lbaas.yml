@@ -1,0 +1,20 @@
+- name: "Gathering all available LBAAS details in tenancy"
+  oci_loadbalancer_load_balancer_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: lbaas_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating LBAAS dict from json data"
+  set_fact:
+    lbaas: '{{ lbaas | default({}) | combine ( {item.id : [item.display_name, item.ip_addresses, "Is_Private: "+item.is_private | string, compartments[item.compartment_id], item.subnet_ids, item.backend_sets]} ) }}'
+  with_items: '{{ lbaas_list | json_query ( "results[*].load_balancers[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "show lbaas dictionary data"
+  debug:
+    var=lbaas
