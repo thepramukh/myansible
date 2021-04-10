@@ -15,25 +15,19 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-
-- name: Creates directory for output logging
-  file:
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
-    state: directory
-
-- name: logging output to a file.
+- name: 'Write out CSV header'
   copy:
-    content: "================== COMPUTE.LOG ==================\n"
-    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.log"
+    content: "Compartment,Instance,Creation-Time,Public-IP,Image-ID,Shape,OCID,Lifecycle-State,Availability-Domain,Private-IP"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
 
-- name: Appending data to log file.
-  blockinfile:
-    block: "{{ '\n' + item.data | to_nice_json + '\n\n' }}"
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.log"
-    marker: <!-- {mark} -->
-    marker_begin: '{{ item.header }}'
-    marker_end: 'END'
-  with_items:
-    - { header: " -- Compute -- ", data: "{{ compute }}" }
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
+    state: 'present'
+  with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
   loop_control:
-    label: '{{ item.header }}'
+    label: '{{ item.display_name }}'

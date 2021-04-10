@@ -31,7 +31,3 @@
   with_items: '{{ drgattachment_list | json_query ( "results[*].drg_attachments[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
-
-- name: show output
-  debug:
-    var: drgattach

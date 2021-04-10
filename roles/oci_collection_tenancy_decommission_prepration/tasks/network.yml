@@ -107,7 +107,7 @@
 
 - name: "Validating NSG Dict"
   set_fact:
-    nsg: "{{ nsg | default({'No NSG': ['Nil']}) }}"
+    nsg: "{{ nsg | default({}) }}"
   when: nsg is not defined
 
 - name: "Gathering dhcp options"
@@ -139,7 +139,7 @@
   loop_control:
     label: "{{ item.value[0] }}"
 
-- name: "creating dhcp dict from json data"
+- name: "creating local peering gateway dict from json data"
   set_fact:
     lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], "Cross Tenancy: " + item.is_cross_tenancy_peering|string, "Advertised Cidr: "+ item.peer_advertised_cidr, "Status: " + item.peering_status, route_table[item.route_table_id][0] ]} ) }}'
   with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
@@ -220,36 +220,229 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: Creates directory for output logging
-  file:
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
-    state: directory
-
-- name: logging output to a file.
+- name: 'Write out CSV header for VCN'
   copy:
-    content: "================== NETWORK.LOG ==================\n"
-    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.log"
+    content: "VCN,CIDR-Block,Compartments,State,DomainName,OCID"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
 
-- name: Appending data to log file.
-  blockinfile:
-    block: "{{ '\n' + item.data | to_nice_json + '\n\n' }}"
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.log"
-    marker: <!-- {mark} -->
-    marker_begin: '{{ item.header }}'
-    marker_end: 'END'
-  with_items:
-    - { header: " -- VCNs -- ", data: "{{ vcn }}" }
-    - { header: " -- Subnets -- ", data: "{{ subnet }}" }
-    - { header: '-- DHCP --', data: "{{ dhcp }}" }
-    - { header: '-- Route Table --', data: "{{ route_table }}" }
-    - { header: '-- Security Lists --', data: "{{ security_list }}" }
-    - { header: '-- NSGs --', data: "{{ nsg }}" }
-    - { header: '-- Internet Gateway --', data: "{{ igw }}" }
-    - { header: '-- NAT Gateway --', data: "{{ ngw }}" }
-    - { header: '-- Service Gateway --', data: "{{ sgw }}" }
-    - { header: '-- Private IPs --', data: "{{ pvtip }}" }
-    - { header: '-- Public IPs --', data: "{{ pubip }}" }
-    - { header: '-- Local Peering Gateway --', data: "{{ lpg }}" }
+- name: 'Write out CSV content for VCN'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.cidr_block }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.vcn_domain_name}},{{ item.compartment_id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ vcn_list | json_query ( "results[*].vcns[*]" ) }}'
   loop_control:
-    label: '{{ item.header }}'
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Subnet'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSubnet,Cidr-Block,Compartment,State,DomainName,Dhcp-Ocid,Prohibit-Public-IP,Routetable-Id,SL-Id,Creation-Time,VCN,Subnet-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Subnet'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.cidr_block }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.subnet_domain_name}},{{ dhcp[item.dhcp_options_id][0] }},{{ item.prohibit_public_ip_on_vnic }},{{ route_table[item.route_table_id][0] }},{{ item.security_list_ids | join(' ') }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ subnet_list | json_query ( "results[*].subnets[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for IGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nInternet-Gateway,Is-Enabled,Compartment,State,Creation-Time,VCN,IGW-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for IGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.is_enabled }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ igw_list | json_query ( "results[*].internet_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Route Table'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nRoute-Table,No-of-Route-Rules,Compartment,State,Creation-Time,VCN,RT-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Route Table'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.route_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Security List'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSecurity-List,No-of-Egress-Rules,No-of-Ingress-Rules,Compartment,State,Creation-Time,VCN,SL-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Security List'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.egress_security_rules |length }},{{ item.ingress_security_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for NSG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nNSG,Compartment,State,Creation-Time,VCN,NSG-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for NSG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ nsg_list | json_query ( "results[*].network_security_groups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for DHCP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nDHCP,Custom-DNS-Server,Server-Type,Compartment,State,Creation-Time,VCN,Dhcp-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for DHCP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.options[0].custom_dns_servers }},{{ item.options[0].server_type }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ dhcp_list | json_query ( "results[*].dhcp_options[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for LPG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nLPG,Cross-Tenancy-Peering,Peer-Advertised-Cidr,Status,Routa-Table,Compartment,State,Creation-Time,VCN,lpg-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for LPG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.is_cross_tenancy_peering }},{{ item.peer_advertised_cidr }},{{ item.peering_status }},{{ route_table[item.route_table_id][0] }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for NATGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nNATGW,Block-Traffic,NAT-IP,Compartment,State,Creation-Time,VCN,Natgw-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for NATGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.block_traffic }},{{ item.nat_ip }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ ngw_list | json_query ( "results[*].nat_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for PvtIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nPvtIP,Hostname-Label,IPAddr,Primary,Subnet,AD,Compartment,Creation-Time,VCN,NSG-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for PvtIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.hostname_label }},{{ item.ip_address }},{{ item.is_primary }},{{ subnet[item.subnet_id][0] }},{{ item.availability_domain }},{{ compartments[item.compartment_id] }},{{ item.time_created.split('.')[0] }},{{ subnet[item.subnet_id][5] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for PubIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nPubIP,AD,Attached-to-type,IpAddr,Lifetime,PvtIPid,Scope,Compartment,State,Creation-Time,PvtIP-Subnet,NSG-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for PubIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.availability_domain }},{{ item.assigned_entity_type }},{{ item.ip_address }},{{ item.lifetime }},{{ pvtip[item.private_ip_id][3] }},{{ item.scope }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ pvtip[item.private_ip_id][5] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for SGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSGW,Block-Traffic,Route-table,Services,Compartment,State,Creation-Time,VCN,SGW-Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for SGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.block_traffic }},{{ route_table[item.route_table_id][0] }},{{ item.services | json_query ( '[*].service_name' ) | join(' ') }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
     

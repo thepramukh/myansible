@@ -28,8 +28,13 @@
   loop_control:
     label: "{{ item.name }}"
 
-# - name: 'Starting network playbook'
-#   include_tasks: 'network.yml'
+- name: Creates directory for CSV Content.
+  file:
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
+    state: directory
+    
+- name: 'Starting network playbook'
+  include_tasks: 'network.yml'
 
 # - name: 'Starting drg playbook'
 #   include_tasks: 'drg.yml'
@@ -46,8 +51,8 @@
 # - name: 'Starting fss playbook'
 #   include_tasks: 'fss.yml'
 
-- name: 'Starting compute playbook'
-  include_tasks: 'compute.yml'
+# - name: 'Starting compute playbook'
+#   include_tasks: 'compute.yml'
 
 # - name: 'Starting dbaas playbook'
 #   include_tasks: 'dbaas.yml'
