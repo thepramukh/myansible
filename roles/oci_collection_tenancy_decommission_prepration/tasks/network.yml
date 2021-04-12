@@ -10,7 +10,7 @@
 
 - name: "creating vcn dict from json data"
   set_fact:
-    vcn: '{{ vcn | default({}) | combine ( {item.id : [item.display_name, item.cidr_block, item.dns_label, compartments[item.compartment_id], item.lifecycle_state, item.vcn_domain_name, item.compartment_id]} ) }}'
+    vcn: '{{ vcn | default({}) | combine ( {item.id : [item.display_name, item.compartment_id]} ) }}'
   with_items: '{{ vcn_list | json_query ( "results[*].vcns[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -19,7 +19,7 @@
   oci_network_subnet_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: subnet_list
@@ -28,7 +28,7 @@
 
 - name: "creating subnet dict from json data"
   set_fact:
-    subnet: '{{ subnet | default({}) | combine ( {item.id : [item.display_name, item.cidr_block, item.dns_label, compartments[item.compartment_id], item.subnet_domain_name, vcn[item.vcn_id][0]]} ) }}'
+    subnet: '{{ subnet | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ subnet_list | json_query ( "results[*].subnets[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -37,7 +37,7 @@
   oci_network_internet_gateway_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: igw_list
@@ -46,7 +46,7 @@
 
 - name: "creating internet gateway dict from json data"
   set_fact:
-    igw: '{{ igw | default({}) | combine ( {item.id : [item.display_name, item.is_enabled, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+    igw: '{{ igw | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ igw_list | json_query ( "results[*].internet_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -55,7 +55,7 @@
   oci_network_route_table_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: rt_list
@@ -64,7 +64,7 @@
 
 - name: "creating route table dict from json data"
   set_fact:
-    route_table: '{{ route_table | default({}) | combine ( {item.id : [item.display_name, item.route_rules|length, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+    route_table: '{{ route_table | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -73,7 +73,7 @@
   oci_network_security_list_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: sl_list
@@ -82,7 +82,7 @@
 
 - name: "creating security list dict from json data"
   set_fact:
-    security_list: '{{ security_list | default({}) | combine ( {item.id : [item.display_name, "Egress: " + item.egress_security_rules|length|string, "Ingress: " + item.ingress_security_rules|length|string, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+    security_list: '{{ security_list | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -91,7 +91,7 @@
   oci_network_security_group_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: nsg_list
@@ -100,7 +100,7 @@
 
 - name: "creating network security group dict from json data"
   set_fact:
-    nsg: '{{ nsg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0]]} ) }}'
+    nsg: '{{ nsg | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ nsg_list | json_query ( "results[*].network_security_groups[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -110,11 +110,21 @@
     nsg: "{{ nsg | default({}) }}"
   when: nsg is not defined
 
+- name: "Gathering network security group rules"
+  oci_network_security_group_security_rule_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    network_security_group_id: "{{ item.key  }}"
+  loop: '{{ nsg | dict2items }}'
+  register: nsg_rules_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
 - name: "Gathering dhcp options"
   oci_network_dhcp_options_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: dhcp_list
@@ -123,7 +133,7 @@
 
 - name: "creating dhcp dict from json data"
   set_fact:
-    dhcp: '{{ dhcp | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.options]} ) }}'
+    dhcp: '{{ dhcp | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
   with_items: '{{ dhcp_list | json_query ( "results[*].dhcp_options[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -132,7 +142,7 @@
   oci_network_local_peering_gateway_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: lpg_list
@@ -141,7 +151,7 @@
 
 - name: "creating local peering gateway dict from json data"
   set_fact:
-    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], "Cross Tenancy: " + item.is_cross_tenancy_peering|string, "Advertised Cidr: "+ item.peer_advertised_cidr, "Status: " + item.peering_status, route_table[item.route_table_id][0] ]} ) }}'
+    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0] ]} ) }}'
   with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -150,7 +160,7 @@
   oci_network_nat_gateway_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: ngw_list
@@ -159,7 +169,7 @@
 
 - name: "creating NAT gateway dict from json data"
   set_fact:
-    ngw: '{{ ngw | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.nat_ip, "Block Traffic: " + item.block_traffic|string ]} ) }}'
+    ngw: '{{ ngw | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0] ]} ) }}'
   with_items: '{{ ngw_list | json_query ( "results[*].nat_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -176,7 +186,7 @@
 
 - name: "creating Private IP dict from json data"
   set_fact:
-    pvtip: '{{ pvtip | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], item.hostname_label, item.ip_address, "is_primary: " + item.is_primary|string, subnet[item.subnet_id][0] ]} ) }}'
+    pvtip: '{{ pvtip | default({}) |combine ( {item.id : [item.display_name, item.hostname_label, item.ip_address, subnet[item.subnet_id][0] ]} ) }}'
   with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -197,7 +207,7 @@
 
 - name: "creating Public IP dict from json data"
   set_fact: 
-    pubip: '{{ pubip | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], item.ip_address, pvtip[item.private_ip_id][0] ]} ) }}'
+    pubip: '{{ pubip | default({}) | combine ( {item.id : [item.display_name, item.ip_address, pvtip[item.private_ip_id][0] ]} ) }}'
   with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -206,7 +216,7 @@
   oci_network_service_gateway_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    compartment_id: "{{ item.value[6]  }}"
+    compartment_id: "{{ item.value[1]  }}"
     vcn_id: "{{ item.key }}"
   loop: '{{ vcn | dict2items }}'
   register: sgw_list
@@ -215,14 +225,14 @@
 
 - name: "creating Service gateway dict from json data"
   set_fact:
-    sgw: '{{ sgw | default({}) | combine ( {item.id : [item.display_name, compartments[item.compartment_id], vcn[item.vcn_id][0], item.services | json_query ( "[*].service_name" ), "Block Traffic: " + item.block_traffic|string ]} ) }}'
+    sgw: '{{ sgw | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0], item.services | json_query ( "[*].service_name" ) ]} ) }}'
   with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
 
 - name: 'Write out CSV header for VCN'
   copy:
-    content: "VCN,CIDR-Block,Compartments,State,DomainName,OCID"
+    content: "VCN,CIDR-Block,Compartments,State,DomainName,ocid"
     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
 
 - name: 'Write out CSV content for VCN'
@@ -240,7 +250,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nSubnet,Cidr-Block,Compartment,State,DomainName,Dhcp-Ocid,Prohibit-Public-IP,Routetable-Id,SL-Id,Creation-Time,VCN,Subnet-Ocid"
+    line: "\n\nSubnet,Cidr-Block,Compartment,State,DomainName,Dhcp,Prohibit-Public-IP,Routetable-Id,SL-Id,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -259,7 +269,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nInternet-Gateway,Is-Enabled,Compartment,State,Creation-Time,VCN,IGW-Ocid"
+    line: "\n\nInternet-Gateway,Is-Enabled,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -274,11 +284,12 @@
   loop_control:
     label: "{{ item.display_name }}"
 
+
 - name: 'Write out CSV header for Route Table'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nRoute-Table,No-of-Route-Rules,Compartment,State,Creation-Time,VCN,RT-Ocid"
+    line: "\n\nRoute-Table,No-of-Route-Rules,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -286,9 +297,24 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ item.display_name }},{{ item.route_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    line: '{{ item.display_name }},{{ item.route_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split(".")[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}'
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Creating Json File'
+  copy:
+    content: "-----Route-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/route_rules.json"
+
+- name: 'Dumping route-table rules in json.'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }}\n{{ item.route_rules | to_nice_json }}"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/route_rules.json"
   with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
@@ -297,7 +323,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nSecurity-List,No-of-Egress-Rules,No-of-Ingress-Rules,Compartment,State,Creation-Time,VCN,SL-Ocid"
+    line: "\n\nSecurity-List,No-of-Egress-Rules,No-of-Ingress-Rules,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -312,11 +338,26 @@
   loop_control:
     label: "{{ item.display_name }}"
 
+- name: 'Creating Json File'
+  copy:
+    content: "-----Security-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/sl.json"
+
+- name: 'Dumping Security-List rules in json'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }}\nEgress Rules:\n{{ item.egress_security_rules | to_nice_json }}\nIngress Rules:\n{{ item.ingress_security_rules | to_nice_json }}"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/sl.json"
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
 - name: 'Write out CSV header for NSG'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nNSG,Compartment,State,Creation-Time,VCN,NSG-Ocid"
+    line: "\n\nNSG,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -331,11 +372,27 @@
   loop_control:
     label: "{{ item.display_name }}"
 
+- name: 'Creating nsg dump json file'
+  copy:
+    content: "-----NSG-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/nsg.json"
+
+- name: "Dumping NSG Rules"
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.item.value[0] }} | {{ item.item.value[1] }}\n{{ item.network_security_group_security_rules | to_nice_json }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/nsg.json"
+    state: 'present'
+  with_items: '{{ nsg_rules_list | json_query ( "results[*]" ) }}'
+  loop_control:
+    label: "{{ item.item.value[0] }}"
+
 - name: 'Write out CSV header for DHCP'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nDHCP,Custom-DNS-Server,Server-Type,Compartment,State,Creation-Time,VCN,Dhcp-Ocid"
+    line: "\n\nDHCP,Server-Type,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -343,7 +400,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ item.display_name }},{{ item.options[0].custom_dns_servers }},{{ item.options[0].server_type }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    line: "{{ item.display_name }},{{ item.options[0].type }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
   with_items: '{{ dhcp_list | json_query ( "results[*].dhcp_options[*]" ) }}'
@@ -354,7 +411,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nLPG,Cross-Tenancy-Peering,Peer-Advertised-Cidr,Status,Routa-Table,Compartment,State,Creation-Time,VCN,lpg-Ocid"
+    line: "\n\nLPG,Cross-Tenancy-Peering,Peer-Advertised-Cidr,Status,Routa-Table,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -373,7 +430,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nNATGW,Block-Traffic,NAT-IP,Compartment,State,Creation-Time,VCN,Natgw-Ocid"
+    line: "\n\nNATGW,Block-Traffic,NAT-IP,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -392,7 +449,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nPvtIP,Hostname-Label,IPAddr,Primary,Subnet,AD,Compartment,Creation-Time,VCN,NSG-Ocid"
+    line: "\n\nPvtIP,Hostname-Label,IPAddr,Primary,Subnet,AD,Compartment,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -400,7 +457,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ item.display_name }},{{ item.hostname_label }},{{ item.ip_address }},{{ item.is_primary }},{{ subnet[item.subnet_id][0] }},{{ item.availability_domain }},{{ compartments[item.compartment_id] }},{{ item.time_created.split('.')[0] }},{{ subnet[item.subnet_id][5] }},{{ item.id }}"
+    line: "{{ item.display_name }},{{ item.hostname_label }},{{ item.ip_address }},{{ item.is_primary }},{{ subnet[item.subnet_id][0] }},{{ item.availability_domain }},{{ compartments[item.compartment_id] }},{{ item.time_created.split('.')[0] }},{{ subnet[item.subnet_id][1] }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
   with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
@@ -411,7 +468,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nPubIP,AD,Attached-to-type,IpAddr,Lifetime,PvtIPid,Scope,Compartment,State,Creation-Time,PvtIP-Subnet,NSG-Ocid"
+    line: "\n\nPubIP,AD,Attached-to-type,IpAddr,Lifetime,PvtIPid,Scope,Compartment,State,Creation-Time,PvtIP-Subnet,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -430,7 +487,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "\n\nSGW,Block-Traffic,Route-table,Services,Compartment,State,Creation-Time,VCN,SGW-Ocid"
+    line: "\n\nSGW,Block-Traffic,Services,Compartment,State,Creation-Time,VCN,ocid"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
 
@@ -438,11 +495,10 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ item.display_name }},{{ item.block_traffic }},{{ route_table[item.route_table_id][0] }},{{ item.services | json_query ( '[*].service_name' ) | join(' ') }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    line: "{{ item.display_name }},{{ item.block_traffic }},{{ item.services | json_query ( '[*].service_name' ) | join(' ') }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
   with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
-
     
