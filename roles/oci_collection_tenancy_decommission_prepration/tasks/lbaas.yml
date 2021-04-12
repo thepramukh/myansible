@@ -15,6 +15,18 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: "show lbaas dictionary data"
-  debug:
-    var=lbaas
+- name: 'Write out CSV header for lbaas'
+  copy:
+    content: "Compartment,Name,IP-Addr,Is-Private,Shape,Subnet-Ids,Lifecycle-State,Backend Set IP,Creation-Time,OCID"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/loadbalancers.csv"
+
+- name: 'Write out CSV content for lbaas'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: '{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.ip_addresses[0].ip_address }},{{ item.is_private }},{{ item.shape_name }},{{ item.subnet_ids | join (":") }},{{ item.lifecycle_state }},{{ item.backend_sets | json_query ( "*.backends[*].[ip_address, port]") | flatten | join (" ") }},{{ item.time_created.split(".")[0] }},{{ item.id }}'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/loadbalancers.csv"
+    state: 'present'
+  with_items: '{{ lbaas_list | json_query ( "results[*].load_balancers[*]" ) }}'
+  loop_control:
+    label: '{{ item.display_name }}'
