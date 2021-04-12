@@ -1,0 +1,98 @@
+# #Users, Groups, Policies, Fedration, Compartments
+
+# - name: "Gathering all available users in tenancy"
+#   oci_identity_user_facts:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     compartment_id: '{{ oci_config_tenancy }}'
+#   register: user_list
+
+# - name: Show users
+#   debug:
+#     msg: "{{ user_list }}"
+
+# - name: "creating user dict from json data"
+#   set_fact:
+#     users: '{{ users | default({}) | combine ( {item.id : [item.name, item.email, item.description, item.lifecycle_state]} ) }}'
+#   with_items: '{{ user_list | json_query ( "users[?identity_provider_id == null]" ) }}'
+#   loop_control:
+#     label: "{{ item.name }}"
+
+# - name: 'Write out CSV header for users'
+#   copy:
+#     content: "Name,Email,Description,State,Ocid"
+#     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+
+# - name: 'Write out CSV content for users'
+#   lineinfile:
+#     create: 'no'
+#     insertafter: 'EOF'
+#     line: "{{ item.name }},{{ item.email }}.{{ item.description }}.{{ item.lifecycle_state }},{{ item.id }}"
+#     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+#     regexp: '^{{ item.name }},{{ item.email }},.*$'
+#     state: 'present'
+#   with_items: '{{ user_list | json_query ( "users[?identity_provider_id == null]" ) }}'
+#   loop_control:
+#     label: '{{ item.name }}'
+
+# - name: "Gathering all available groups in tenancy"
+#   oci_identity_group_facts:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     compartment_id: '{{ oci_config_tenancy }}'
+#   register: group_list
+
+# - name: "creating groups dict from json data"
+#   set_fact:
+#     users: '{{ users | default({}) | combine ( {item.id : [item.name, item.description, item.lifecycle_state]} ) }}'
+#   with_items: '{{ group_list | json_query ( "groups[*]" ) }}'
+#   loop_control:
+#     label: "{{ item.name }}"
+
+# - name: 'Write out CSV header for groups'
+#   copy:
+#     content: "Name,Description,State,Ocid"
+#     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+
+# - name: 'Write out CSV content for groups'
+#   lineinfile:
+#     create: 'no'
+#     insertafter: 'EOF'
+#     line: "{{ item.name }},{{ item.description }}.{{ item.lifecycle_state }},{{ item.id }}"
+#     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+#     regexp: '^{{ item.name }},{{ item.description }},.*$'
+#     state: 'present'
+#   with_items: '{{ group_list | json_query ( "groups[*]" ) }}'
+#   loop_control:
+#     label: '{{ item.name }}'
+
+- name: "Gathering all available policy in tenancy"
+  oci_identity_policy_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: '{{ oci_config_tenancy }}'
+  register: policy_list
+
+- name: "creating policy dict from json data"
+  set_fact:
+    users: '{{ users | default({}) | combine ( {item.id : [item.name, item.description, item.lifecycle_state]} ) }}'
+  with_items: '{{ policy_list | json_query ( "policies[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: 'Write out CSV header for policy'
+  copy:
+    content: "Name,Description,State,Statements,Creation-Time,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+
+- name: 'Write out CSV content for policy'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.name }},{{ item.description }}.{{ item.lifecycle_state }},{{ item.statements | join('*') }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    regexp: '^{{ item.name }},{{ item.description }},.*$'
+    state: 'present'
+  with_items: '{{ policy_list | json_query ( "policies[*]" ) }}'
+  loop_control:
+    label: '{{ item.name }}'
