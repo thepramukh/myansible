@@ -8,4 +8,4 @@
   roles:
     - role: oci_collection_authenticate
     - role: oci_collection_tenancy_decommission_prepration
-    - role: oci_collection_tenancy_decommission_execution
+    - role: oci_collection_tenancy_decommission_compute_shutdown
