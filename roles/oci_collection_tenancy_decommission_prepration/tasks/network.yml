@@ -476,7 +476,7 @@
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ item.display_name }},{{ item.availability_domain }},{{ item.assigned_entity_type }},{{ item.ip_address }},{{ item.lifetime }},{{ pvtip[item.private_ip_id][3] }},{{ item.scope }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ pvtip[item.private_ip_id][5] }},{{ item.id }}"
+    line: "{{ item.display_name }},{{ item.availability_domain }},{{ item.assigned_entity_type }},{{ item.ip_address }},{{ item.lifetime }},{{ pvtip[item.private_ip_id][2] }},{{ item.scope }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ pvtip[item.private_ip_id][3] }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
     state: 'present'
   with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
