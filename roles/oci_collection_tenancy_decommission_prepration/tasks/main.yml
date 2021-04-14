@@ -32,12 +32,14 @@
   file:
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
     state: directory
-    
-- name: 'Starting network playbook'
-  include_tasks: 'network.yml'
 
-# - name: 'Starting drg playbook'
-#   include_tasks: 'drg.yml'
+# Punit    
+# - name: 'Starting network playbook'
+#   include_tasks: 'network.yml'
+
+# Punit
+- name: 'Starting drg playbook'
+  include_tasks: 'drg.yml'
 
 # - name: 'Starting lbaas volume playbook'
 #   include_tasks: 'lbaas.yml'
@@ -51,12 +53,14 @@
 # - name: 'Starting fss playbook'
 #   include_tasks: 'fss.yml'
 
+# Punit
 # - name: 'Starting compute playbook'
 #   include_tasks: 'compute.yml'
 
 # - name: 'Starting dbaas playbook'
 #   include_tasks: 'dbaas.yml'
 
+# Punit
 # - name: 'Starting iam playbook'
 #   include_tasks: 'iam.yml'
 

@@ -1,4 +1,4 @@
 ---
 # defaults file for oci_collection_tenancy_decommission_prepration
-oci_tenancy: auchban01
-oci_datacenter: iad
+oci_tenancy: aucatdu02
+oci_datacenter: ams
