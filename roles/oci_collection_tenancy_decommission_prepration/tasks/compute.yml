@@ -10,21 +10,21 @@
 
 - name: "creating compute dict from json data"
   set_fact:
-    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region, item.defined_tags]} ) }}'
+    compute: '{{ compute | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.primary_private_ip, item.primary_public_ip, item.region, pvtip_by_ip[item.primary_private_ip], item.source_details | json_query ("boot_volume_id")]} ) }}'
   with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
 
 - name: 'Write out CSV header'
   copy:
-    content: "Compartment,Instance,Creation-Time,Public-IP,Image-ID,Shape,OCID,Lifecycle-State,Availability-Domain,Private-IP"
+    content: "Compartment,Instance,Creation-Time,Public-IP,Image-ID,Shape,OCID,Lifecycle-State,Availability-Domain,Private-IP,Hostname,Subnet,Domain"
     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
 
 - name: 'Write out CSV content'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }}"
+    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }},{{ pvtip_by_ip[item.primary_private_ip] }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
     regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
     state: 'present'
