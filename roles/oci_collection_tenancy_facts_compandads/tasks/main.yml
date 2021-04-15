@@ -1,0 +1,34 @@
+---
+# tasks file for oci_collection_tenancy_facts_compandads
+- name: Creates directory for CSV Dump.
+  file:
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}"
+    state: directory
+
+- name: "Gathering tenancy compartments facts"
+  oci_identity_compartment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    parent_compartment_id: "{{ oci_config_tenancy }}"
+  register: oci_compartment_id
+  
+- name: "creating compartment dict from facts"
+  set_fact:
+    compartments: '{{ compartments | default({oci_config_tenancy: "root"}) | combine ( {item.id : item.name} ) }}'
+  loop: '{{ oci_compartment_id | json_query ( "compartments[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Gathering tenancy ad facts"
+  oci_identity_availability_domain_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ oci_config_tenancy }}"
+  register: oci_ad_id
+  
+- name: "creating ad dict from facts"
+  set_fact:
+    ads: '{{ ads | default({}) | combine ( {item.id : item.name} ) }}'
+  loop: '{{ oci_ad_id | json_query ( "availability_domains[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"

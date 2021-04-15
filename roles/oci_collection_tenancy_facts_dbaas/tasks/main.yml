@@ -1,0 +1,14 @@
+---
+# tasks file for oci_collection_tenancy_facts_dbaas
+- name: Validating role oci_collection_authenticate
+  include_role:
+    name: oci_collection_authenticate
+  when: oci_local_username is not defined
+
+- name: validating role  oci_collection_tenancy_facts_compandads
+  include_role:
+    name: oci_collection_tenancy_facts_compandads
+  when: compartments is not defined
+
+- name: 'Starting dbaas playbook'
+  include_tasks: 'dbaas.yml'

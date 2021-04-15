@@ -1,11 +1,27 @@
 ---
 # tasks file for oci_authenticate
-- name: My Learning tasks
+- name: Mandatory roles running.
   gather_facts: "false"
   hosts: localhost
   collections:
     - 'oracle.oci'
   roles:
     - role: oci_collection_authenticate
-    - role: oci_collection_tenancy_decommission_prepration
-    - role: oci_collection_tenancy_decommission_compute_shutdown
+    - role: oci_collection_tenancy_facts_compandads
+
+- name: Gathering various tenancy facts
+  gather_facts: "false"
+  hosts: localhost
+  collections:
+    - 'oracle.oci'
+  roles:
+    - { role: oci_collection_tenancy_facts_network, tags: ['fnet'] }
+    - { role: oci_collection_tenancy_facts_compute, tags: ['fcompute'] }
+    - { role: oci_collection_tenancy_facts_fss, tags: ['ffss'] }
+    - { role: oci_collection_tenancy_facts_object, tags: ['fobj'] }
+    - { role: oci_collection_tenancy_facts_iam, tags: ['fiam'] }
+    - { role: oci_collection_tenancy_facts_block, tags: ['fblk'] }
+    - { role: oci_collection_tenancy_facts_lbaas, tags: ['flb'] }
+    - { role: oci_collection_tenancy_facts_dbaas, tags: ['fdb'] }
+    - { role: oci_collection_tenancy_facts_drg, tags: ['fdrg'] }
+

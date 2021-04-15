@@ -1,0 +1,4 @@
+---
+# tasks file for oci_collection_tenancy_facts_object
+- name: 'Starting bucket volume playbook'
+  include_tasks: 'bucket.yml'
