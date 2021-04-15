@@ -1,0 +1,32 @@
+- name: "Gathering all vcn in tenancy"
+  oci_network_vcn_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: vcn_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating vcn dict from json data"
+  set_fact:
+    vcn: '{{ vcn | default({}) | combine ( {item.id : [item.display_name, item.compartment_id]} ) }}'
+  with_items: '{{ vcn_list | json_query ( "results[*].vcns[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for VCN'
+  copy:
+    content: "VCN,CIDR-Block,Compartments,State,DomainName,ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+
+- name: 'Write out CSV content for VCN'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.cidr_block }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.vcn_domain_name}},{{ item.compartment_id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ vcn_list | json_query ( "results[*].vcns[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

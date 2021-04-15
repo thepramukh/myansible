@@ -1,0 +1,67 @@
+- name: "Gathering network security group"
+  oci_network_security_group_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: nsg_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating network security group dict from json data"
+  set_fact:
+    nsg: '{{ nsg | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ nsg_list | json_query ( "results[*].network_security_groups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Validating NSG Dict"
+  set_fact:
+    nsg: "{{ nsg | default({}) }}"
+  when: nsg is not defined
+
+- name: "Gathering network security group rules"
+  oci_network_security_group_security_rule_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    network_security_group_id: "{{ item.key  }}"
+  loop: '{{ nsg | dict2items }}'
+  register: nsg_rules_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: 'Write out CSV header for NSG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nNSG,Compartment,State,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for NSG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ nsg_list | json_query ( "results[*].network_security_groups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Creating nsg dump json file'
+  copy:
+    content: "-----NSG-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/nsg.json"
+
+- name: "Dumping NSG Rules"
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.item.value[0] }} | {{ item.item.value[1] }}\n{{ item.network_security_group_security_rules | to_nice_json }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/nsg.json"
+    state: 'present'
+  with_items: '{{ nsg_rules_list | json_query ( "results[*]" ) }}'
+  loop_control:
+    label: "{{ item.item.value[0] }}"

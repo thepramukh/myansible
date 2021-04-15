@@ -1,0 +1,51 @@
+- name: "Gathering security list"
+  oci_network_security_list_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: sl_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating security list dict from json data"
+  set_fact:
+    security_list: '{{ security_list | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Security List'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSecurity-List,No-of-Egress-Rules,No-of-Ingress-Rules,Compartment,State,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Security List'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.egress_security_rules |length }},{{ item.ingress_security_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Creating Json File'
+  copy:
+    content: "-----Security-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/sl.json"
+
+- name: 'Dumping Security-List rules in json'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }}\nEgress Rules:\n{{ item.egress_security_rules | to_nice_json }}\nIngress Rules:\n{{ item.ingress_security_rules | to_nice_json }}"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/sl.json"
+  with_items: '{{ sl_list | json_query ( "results[*].security_lists[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

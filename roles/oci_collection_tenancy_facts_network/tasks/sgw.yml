@@ -1,0 +1,37 @@
+- name: "Gathering Service gateway"
+  oci_network_service_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: sgw_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating Service gateway dict from json data"
+  set_fact:
+    sgw: '{{ sgw | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0], item.services | json_query ( "[*].service_name" ) ]} ) }}'
+  with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for SGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSGW,Block-Traffic,Services,Compartment,State,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for SGW'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.block_traffic }},{{ item.services | json_query ( '[*].service_name' ) | join(' ') }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ sgw_list | json_query ( "results[*].service_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+    

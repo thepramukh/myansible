@@ -1,0 +1,51 @@
+- name: "Gathering route table"
+  oci_network_route_table_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: rt_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating route table dict from json data"
+  set_fact:
+    route_table: '{{ route_table | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0]]} ) }}'
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Route Table'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nRoute-Table,No-of-Route-Rules,Compartment,State,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Route Table'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: '{{ item.display_name }},{{ item.route_rules |length }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split(".")[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Creating Json File'
+  copy:
+    content: "-----Route-Rules-----"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/route_rules.json"
+
+- name: 'Dumping route-table rules in json.'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }}\n{{ item.route_rules | to_nice_json }}"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/route_rules.json"
+  with_items: '{{ rt_list | json_query ( "results[*].route_tables[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

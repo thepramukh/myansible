@@ -1,0 +1,36 @@
+- name: "Gathering local peering gateway connections"
+  oci_network_local_peering_gateway_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: lpg_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating local peering gateway dict from json data"
+  set_fact:
+    lpg: '{{ lpg | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0] ]} ) }}'
+  with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for LPG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nLPG,Cross-Tenancy-Peering,Peer-Advertised-Cidr,Status,Routa-Table,Compartment,State,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for LPG'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.is_cross_tenancy_peering }},{{ item.peer_advertised_cidr }},{{ item.peering_status }},{{ route_table[item.route_table_id][0] }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ lpg_list | json_query ( "results[*].local_peering_gateways[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

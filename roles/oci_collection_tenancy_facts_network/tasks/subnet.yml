@@ -1,0 +1,36 @@
+- name: "Gathering subnets"
+  oci_network_subnet_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    vcn_id: "{{ item.key }}"
+  loop: '{{ vcn | dict2items }}'
+  register: subnet_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating subnet dict from json data"
+  set_fact:
+    subnet: '{{ subnet | default({}) | combine ( {item.id : [item.display_name, vcn[item.vcn_id][0], item.subnet_domain_name]} ) }}'
+  with_items: '{{ subnet_list | json_query ( "results[*].subnets[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+  
+- name: 'Write out CSV header for Subnet'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nSubnet,Cidr-Block,Compartment,State,DomainName,Dhcp,Prohibit-Public-IP,Routetable-Id,SL-Id,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for Subnet'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.cidr_block }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.subnet_domain_name}},{{ dhcp[item.dhcp_options_id][0] }},{{ item.prohibit_public_ip_on_vnic }},{{ route_table[item.route_table_id][0] }},{{ item.security_list_ids | join(' ') }},{{ item.time_created.split('.')[0] }},{{ vcn[item.vcn_id][0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ subnet_list | json_query ( "results[*].subnets[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

@@ -10,5 +10,32 @@
     name: oci_collection_tenancy_facts_compandads
   when: compartments is not defined
 
-- name: 'Starting network playbook'
-  include_tasks: 'network.yml'
+- name: 'Starting vcn playbook'
+  include_tasks: 'vcn.yml'
+
+- name: 'Starting DHCP playbook'
+  include_tasks: 'dhcp.yml'
+
+- name: 'Starting route table playbook'
+  include_tasks: 'rt.yml'
+
+- name: 'Starting subnet playbook'
+  include_tasks: 'subnet.yml'
+
+- name: 'Starting internet gateway playbook'
+  include_tasks: 'igw.yml'
+
+- name: 'Starting security list playbook'
+  include_tasks: 'seclist.yml'
+
+- name: 'Starting Local Peering Gateway playbook'
+  include_tasks: 'lpg.yml'
+
+- name: 'Starting NAT Gateway playbook'
+  include_tasks: 'natgw.yml'
+
+- name: 'Starting Private IP and Public IP playbook'
+  include_tasks: 'vnic.yml'
+
+- name: 'Starting service gateway playbook'
+  include_tasks: 'sgw.yml'

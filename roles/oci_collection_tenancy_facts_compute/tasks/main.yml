@@ -10,5 +10,13 @@
     name: oci_collection_tenancy_facts_compandads
   when: compartments is not defined
 
+- name: validating role oci_collection_tenancy_facts_network
+  include_role:
+    name: oci_collection_tenancy_facts_network
+  when: vcn is not defined
+
 - name: 'Starting compute playbook'
   include_tasks: 'compute.yml'
+
+- name: 'Starting custom images playbook'
+  include_tasks: 'custom.yml'

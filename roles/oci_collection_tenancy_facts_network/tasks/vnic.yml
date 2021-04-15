@@ -1,0 +1,77 @@
+- name: "Gathering Private IP"
+  oci_network_private_ip_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    subnet_id: "{{ item.key }}"
+  loop: '{{ subnet | dict2items }}'
+  register: pvtip_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating Private IP dict from json data"
+  set_fact:
+    pvtip: '{{ pvtip | default({}) |combine ( {item.id : [item.display_name, item.hostname_label, item.ip_address, subnet[item.subnet_id][0] ]} ) }}'
+    pvtip_by_ip: '{{ pvtip_by_ip | default({}) |combine ( {item.ip_address : [item.hostname_label, subnet[item.subnet_id][0],subnet[item.subnet_id][2] ]} ) }}'
+  with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering Public IPs"
+  oci_network_public_ip_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    scope: AVAILABILITY_DOMAIN
+    availability_domain: "{{ item[1].value }}"
+    compartment_id: "{{ item[0].key }}"
+  with_nested: 
+    - '{{ compartments | dict2items }}'
+    - '{{ ads | dict2items }}'
+  register: pubip_list
+  loop_control:
+    label: "{{ item[0].value, item[1].value }}"
+
+- name: "creating Public IP dict from json data"
+  set_fact: 
+    pubip: '{{ pubip | default({}) | combine ( {item.id : [item.display_name, item.ip_address, pvtip[item.private_ip_id][0] ]} ) }}'
+  with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+
+- name: 'Write out CSV header for PvtIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nPvtIP,Hostname-Label,IPAddr,Primary,Subnet,AD,Compartment,Creation-Time,VCN,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for PvtIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.hostname_label }},{{ item.ip_address }},{{ item.is_primary }},{{ subnet[item.subnet_id][0] }},{{ item.availability_domain }},{{ compartments[item.compartment_id] }},{{ item.time_created.split('.')[0] }},{{ subnet[item.subnet_id][1] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ pvtip_list | json_query ( "results[*].private_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for PubIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nPubIP,AD,Attached-to-type,IpAddr,Lifetime,PvtIPid,Scope,Compartment,State,Creation-Time,PvtIP-Subnet,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for PubIP'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.availability_domain }},{{ item.assigned_entity_type }},{{ item.ip_address }},{{ item.lifetime }},{{ pvtip[item.private_ip_id][2] }},{{ item.scope }},{{ compartments[item.compartment_id] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ pvtip[item.private_ip_id][3] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/network.csv"
+    state: 'present'
+  with_items: '{{ pubip_list | json_query ( "results[*].public_ips[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
