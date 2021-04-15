@@ -1,4 +1,4 @@
-#Users, Groups, Policies, Fedration, Compartments
+#Users, Groups, Policies, Fedration
 - name: "Gathering all available users in tenancy"
   oci_identity_user_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
@@ -24,7 +24,6 @@
     insertafter: 'EOF'
     line: "{{ item.name }},{{ item.email }}.{{ item.description }}.{{ item.lifecycle_state }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
-    regexp: '^{{ item.name }},{{ item.email }},.*$'
     state: 'present'
   with_items: '{{ user_list | json_query ( "users[?identity_provider_id == null]" ) }}'
   loop_control:
@@ -45,9 +44,12 @@
     label: "{{ item.name }}"
 
 - name: 'Write out CSV header for groups'
-  copy:
-    content: "Name,Description,State,Ocid"
-    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nName,Description,State,Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
 
 - name: 'Write out CSV content for groups'
   lineinfile:
@@ -55,7 +57,6 @@
     insertafter: 'EOF'
     line: "{{ item.name }},{{ item.description }}.{{ item.lifecycle_state }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
-    regexp: '^{{ item.name }},{{ item.description }},.*$'
     state: 'present'
   with_items: '{{ group_list | json_query ( "groups[*]" ) }}'
   loop_control:
@@ -76,9 +77,12 @@
     label: "{{ item.name }}"
 
 - name: 'Write out CSV header for policy'
-  copy:
-    content: "Name,Description,State,Statements,Creation-Time,Ocid"
-    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nName,Description,State,Statements,Creation-Time,Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
 
 - name: 'Write out CSV content for policy'
   lineinfile:
@@ -86,8 +90,77 @@
     insertafter: 'EOF'
     line: "{{ item.name }},{{ item.description }}.{{ item.lifecycle_state }},{{ item.statements | join('*') }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
-    regexp: '^{{ item.name }},{{ item.description }},.*$'
     state: 'present'
   with_items: '{{ policy_list | json_query ( "policies[*]" ) }}'
   loop_control:
     label: '{{ item.name }}'
+
+- name: "Gathering all available linked fedration in tenancy"
+  oci_identity_provider_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: '{{ oci_config_tenancy }}'
+    protocol: SAML2
+  register: fedration_list
+
+- name: "creating fedration dict from json data"
+  set_fact:
+    fedration: '{{ fedration | default({}) | combine ( {item.id : [item.name, item.description, item.lifecycle_state]} ) }}'
+  with_items: '{{ fedration_list | json_query ( "identity_providers[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: 'Write out CSV header for fedration'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nName,Description,State,Type,Protocol,Redirect-url,Creation-Time,Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for fedration'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.name }},{{ item.description }}.{{ item.lifecycle_state }},{{ item.product_type }},{{ item.protocol }},{{ item.redirect_url }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
+  with_items: '{{ fedration_list | json_query ( "identity_providers[*]" ) }}'
+  loop_control:
+    label: '{{ item.name }}'
+
+- name: "Gathering fedration group mappings in tenancy"
+  oci_identity_provider_group_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    identity_provider_id: '{{ item.key }}'
+  loop: '{{ fedration | dict2items }}'
+  register: fedgroups_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating fedration group mappings dict from json data"
+  set_fact:
+    fed_grp: '{{ fed_grp | default({}) | combine ( {item.id : [item.display_name, item.identity_provider_id]} ) }}'
+  with_items: '{{ fedgroups_list | json_query ( "results[*].identity_provider_groups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for fedration group mappings'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nName,Provider,Creation-Time,Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for fedration group mappings'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }}.{{ fedration[item.identity_provider_id][0] }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/iam.csv"
+    state: 'present'
+  with_items: '{{ fedgroups_list | json_query ( "results[*].identity_provider_groups[*]" ) }}'
+  loop_control:
+    label: '{{ item.display_name }}'
