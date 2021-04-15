@@ -1,0 +1,101 @@
+- name: "Gathering all available DBAAS instances in tenancy"
+  oci_database_db_system_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: dbaas_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating DBAAS dict from json data"
+  set_fact:
+    dbaas: '{{ dbaas | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.shape, compartments[item.compartment_id], item.data_storage_size_in_gbs, item.defined_tags]} ) }}'
+  with_items: '{{ dbaas_list | json_query ( "results[*].db_systems[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "creating DBAAS dict from json data2"
+  set_fact:
+    dbaas1: '{{ dbaas1 | default({}) | combine ( {item.id : [item.display_name, item.compartment_id]} ) }}'
+  with_items: '{{ dbaas_list | json_query ( "results[*].db_systems[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header'
+  copy:
+    content: "Compartment,DB_name,Creation-Time,Shape,OCID"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/dbaas.csv"
+
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.shape }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/dbaas.csv"
+    regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
+    state: 'present'
+  with_items: '{{ dbaas_list | json_query ( "results[*].db_systems[*]" ) }}'
+  loop_control:
+    label: '{{ item.display_name }}'
+
+
+- name: "Gathering all available DB_nodes in tenancy"
+  oci_database_db_node_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.value[1]  }}"
+    db_system_id: "{{ item.key  }}"
+  loop: '{{ dbaas1 | dict2items }}'
+  register: dbnodes_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating DBAAS Nodes dict from json data"
+  set_fact:
+    db_nodes: '{{ db_nodes | default({}) | combine ( {item.id : [item.hostname, item.lifecycle_state, item.vnic_id ]} ) }}'
+  with_items: '{{ dbnodes_list | json_query ( "results[*].db_nodes[*]" ) }}'
+  loop_control:
+    label: "{{ item.hostname }}"
+
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: "{{ item.db_system_id }}"
+    line: "DBnode_name,Creation-Time,DB_OCID,Node_OCID,VNIC_ID"
+    line: "{{ item.hostname }},{{ item.time_created.split('.')[0] }},{{ item.db_system_id }},{{ item.id }}, {{ item.vnic_id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/dbaas.csv"
+    state: 'present'
+  with_items: '{{ dbnodes_list | json_query ( "results[*].db_nodes[*]" ) }}'
+  loop_control:
+    label: '{{ item.hostname }}'
+
+
+- name: "Gathering all available vnic_id in tenancy"
+  oci_network_vnic_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    vnic_id: "{{ item.value[2]  }}"
+  loop: '{{ db_nodes | dict2items }}'
+  register: vnic_list
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+- name: "creating VNIC dict from json data"
+  set_fact:
+    vnic: '{{ vnic | default({}) | combine ( {item.id : [item.hostname_label, item.private_ip, item.public_ip, item.subnet_id ]} ) }}'
+  with_items: '{{ vnic_list | json_query ( "results[*].vnic" ) }}'
+  loop_control:
+    label: "{{ item.hostname_label }}"
+
+- name: 'Write out CSV content for VNIC'
+  lineinfile:
+    create: 'no'
+    insertafter: "{{ item.id }}"
+    line: "{{ item.hostname_label }},{{ item.time_created.split('.')[0] }},{{ item.private_ip }}, {{ item.public_ip }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/dbaas.csv"
+    # regexp: '^{{ item.hostname }},.*$'
+    state: 'present'
+  with_items: '{{ vnic_list | json_query ( "results[*].vnic" ) }}'
+  loop_control:
+    label: '{{ item.hostname_label }}'

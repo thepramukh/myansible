@@ -15,6 +15,56 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: "show blockvolume dictionary data"
-  debug:
-    var=blockvolume
+
+- name: 'Write out CSV header'
+  copy:
+    content: "Compartment,Name,Creation-Time,OCID,Lifecycle-State,Size"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/blockvolume.csv"
+
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.size_in_gbs }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/blockvolume.csv"
+    regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
+    state: 'present'
+  with_items: '{{ blockvolume_list | json_query ( "results[*].volumes[*]" ) }}'
+  loop_control:
+    label: '{{ item.display_name }}'
+
+
+- name: "Gathering all available Block Volume backups details in tenancy"
+  oci_blockstorage_volume_backup_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: blockvolumebak_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating blockvolume dict from json data"
+  set_fact:
+    volume_backups: '{{ volume_backups | default({}) | combine ( {item.id : [item.display_name, "BlockVolume Size: "+ item.size_in_gbs | string] }) }}'
+  with_items: '{{ blockvolumebak_list | json_query ( "results[*].volume_backups[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header'
+  copy:
+    content: "Compartment,Name,Creation-Time,OCID,Lifecycle-State,Size"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/blockvolumebak.csv"
+
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.size_in_gbs }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/blockvolumebak.csv"
+    regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
+    state: 'present'
+  with_items: '{{ blockvolumebak_list | json_query ( "results[*].volume_backups[*]" ) }}'
+  loop_control:
+    label: '{{ item.display_name }}'
+
