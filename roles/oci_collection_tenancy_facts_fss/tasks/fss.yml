@@ -1,3 +1,4 @@
+
 - name: "Gathering all available fss details in tenancy"
   oci_file_storage_file_system_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
@@ -11,6 +12,7 @@
   loop_control:
     label: "{{ item[0].value, item[1].value }}"
 
+
 - name: "creating FSS dict from json data"
   set_fact:
     fss: '{{ fss | default({}) | combine ( {item.id : [item.display_name, item.time_created]} ) }}'
@@ -18,6 +20,65 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: "show fss dictionary data"
-  debug:
-    var=fss_list
+# - name: 'Write out CSV header'
+#   copy:
+#     content: "Compartment,FSS_Name,Creation-Time,Public-IP,Image-ID,Shape,OCID,Lifecycle-State,Availability-Domain,Private-IP"
+#     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+
+# - name: 'Write out CSV content'
+#   lineinfile:
+#     create: 'no'
+#     insertafter: 'EOF'
+#     line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }}"
+#     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+#     regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
+#     state: 'present'
+#   with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
+#   loop_control:
+#     label: '{{ item.display_name }}'
+
+
+# - name: "show fss list  data"
+#   debug:
+#     var=fss_list
+
+# - name: fss output
+#   debug: 
+#     msg: '{{ fss | dict2items }}'
+
+
+
+
+
+
+
+
+    #################oci_file_storage_export_set_facts###############
+
+
+
+# - name: "Gathering all available fss details in tenancy"
+#   oci_file_storage_file_system_facts:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     availability_domain: "{{ item[1].value }}"
+#     compartment_id: "{{ item[0].key }}"
+#   with_nested: 
+#     - '{{ compartments | dict2items }}'
+#     - '{{ ads | dict2items }}'
+#   register: fss_list
+#   loop_control:
+#     label: "{{ item[0].value, item[1].value }}"
+
+
+# - name: fss output
+#   debug: 
+#     msg: '{{ fss_list | json_query ( "results[*].file_systems[*]" ) }}'
+
+
+# - name: "creating FSS dict from json data"
+#   set_fact:
+#     fss: '{{ fss | default({}) | combine ( {item.id : [item.display_name, item.time_created]} ) }}'
+#   with_items: '{{ fss_list | json_query ( "results[*].file_systems[*]" ) }}'
+#   loop_control:
+#     label: "{{ item.display_name }}"    
