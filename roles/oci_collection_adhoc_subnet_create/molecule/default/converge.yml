@@ -1,7 +1,0 @@
----
-- name: Converge
-  hosts: all
-  tasks:
-    - name: "Include oci_collection_adhoc_subnet_create"
-      include_role:
-        name: "oci_collection_adhoc_subnet_create"

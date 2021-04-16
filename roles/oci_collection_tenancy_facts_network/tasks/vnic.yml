@@ -37,7 +37,6 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-
 - name: 'Write out CSV header for PvtIP'
   lineinfile:
     create: 'no'

@@ -20,18 +20,18 @@
 
 - name: 'Write out CSV header for attached boot volume'
   lineinfile:
-    line: '\1,Boot-Vol-Id,Boot-Vol-State'
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nCompartment,Attached-to-Host,Creation-Time,OCID,Lifecycle-State,Availability-Domain,BootVol-ID"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-    regexp: '^Ocid,compartment,.*$'
-    backrefs: yes
     state: 'present'
 
 - name: 'Write out CSV content for attached boot volumes'
   lineinfile:
-    line: '\1,{{ item.boot_volume_id }},{{ item.lifecycle_state }}'
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ compute[item.instance_id][7][0] }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.boot_volume_id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-    regexp: '^{{ item.instance_id }},.*$'
-    backrefs: yes
     state: 'present'
   with_items: '{{ attached_bootvol | json_query ( "results[*].boot_volume_attachments[*]" ) }}'
   loop_control:

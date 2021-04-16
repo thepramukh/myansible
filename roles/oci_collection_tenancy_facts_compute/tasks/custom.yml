@@ -1,4 +1,4 @@
-- name: "Gathering all available compute custom images in tenancy"
+- name: "Gathering all available compute images in tenancy"
   oci_compute_image_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
@@ -8,28 +8,31 @@
   loop_control:
     label: "{{ item.value }}"
 
-- name: "creating custom images dict from json data"
+- name: "creating compute images dict from json data"
   set_fact:
-    custom_img: '{{ custom_img | default({}) | combine ( {item.id : [item.display_name, item.lifecycle_state, item.operating_system, compartments[item.compartment_id], item.listing_type, item.operating_system_version, item.size_in_mbs]} ) }}'
+    custom_img: '{{ custom_img | default({}) | combine ( {item.display_name : [item.id, item.lifecycle_state, item.operating_system, item.operating_system_version, item.size_in_mbs]} ) }}'
   with_items: '{{ custom_image_list | json_query ( "results[*].images[*]" ) }}'
   loop_control:
     label: "{{ item.display_name }}"
-  when: item.display_name is defined
+  when:  item.compartment_id is not none
 
-- name: 'Write out CSV header for custom images'
-  copy:
-    content: "Compartment,Image,Creation-Time,State,OS,Version,Size,Ocid"
-    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-
-- name: 'Write out CSV content for custom images'
+- name: 'Write out CSV header for compute images'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.lifecycle_state }},{{ item.operating_system }},{{ item.operating_system_version }},{{ item.size_in_mbs }},{{ item.id }}"
+    line: "\n\nImage,Creation-Time,State,OS,Version,Size,Ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for compute images'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.lifecycle_state }},{{ item.operating_system }},{{ item.operating_system_version }},{{ item.size_in_mbs }},{{ item.id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
     state: 'present'
   with_items: '{{ custom_image_list | json_query ( "results[*].images[*]" ) }}'
   loop_control:
     label: '{{ item.display_name }}'
-  when: "{{ item.display_name }} is defined"
+  when:  item.compartment_id is not none
 

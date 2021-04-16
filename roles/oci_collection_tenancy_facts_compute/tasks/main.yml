@@ -24,5 +24,8 @@
 - name: 'Starting compute vnic attachment playbook'
   include_tasks: 'compute_vnic.yml'
 
+- name: 'Starting compute volumes playbook'
+  include_tasks: 'compute_volumes.yml'
+
 - name: 'Starting compute custom images playbook'
   include_tasks: 'custom.yml'

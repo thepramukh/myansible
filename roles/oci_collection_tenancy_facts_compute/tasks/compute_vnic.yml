@@ -15,7 +15,7 @@
   loop_control:
     label: '{{ compute[item.instance_id][7][0] }}'
 
-- name: 'Write out CSV header for attached boot volume'
+- name: 'Write out CSV header for attached vnic'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
@@ -23,7 +23,7 @@
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
     state: 'present'
 
-- name: 'Write out CSV content for attached boot volumes'
+- name: 'Write out CSV content for attached vnic'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'

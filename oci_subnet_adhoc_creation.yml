@@ -1,8 +1,0 @@
----
-# tasks file for oci_authenticate
-- name: My Learning tasks
-  gather_facts: "false"
-  hosts: "all"
-  roles:
-    - role: oci_collection_authenticate
-    - role: oci_collection_adhoc_subnet_create
