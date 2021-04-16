@@ -15,62 +15,19 @@
   loop_control:
     label: "{{ item.display_name }}"
 
-- name: 'Write out CSV header'
+- name: 'Write out CSV header for compute instances'
   copy:
-    content: "Compartment,Instance,Creation-Time,Public-IP,Image-ID,Shape,OCID,Lifecycle-State,Availability-Domain,Private-IP,Hostname,Subnet,Domain"
+    content: "Ocid,compartment,Instance,Creation-Time,Public-IP,Image-ID,Shape,Lifecycle-State,Availability-Domain,Private-IP,Hostname,Subnet,Domain"
     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
 
-- name: 'Write out CSV content'
+- name: 'Write out CSV content for compute instances'
   lineinfile:
     create: 'no'
     insertafter: 'EOF'
-    line: "{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }},{{ pvtip_by_ip[item.primary_private_ip] | join (',') }}"
+    line: "{{ item.id }},{{ compartments[item.compartment_id] }},{{ item.display_name }},{{ item.time_created.split('.')[0] }},{{ item.primary_public_ip }},{{ item.image_id }},{{ item.shape }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.primary_private_ip }},{{ pvtip_by_ip[item.primary_private_ip] | join (',') }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-    regexp: '^{{ compartments[item.compartment_id] }},{{ item.display_name }},.*$'
     state: 'present'
   with_items: '{{ compute_list | json_query ( "results[*].instances[*]" ) }}'
   loop_control:
     label: '{{ item.display_name }}'
 
-- name: "Gathering all available attached boot volumes in tenancy"
-  oci_compute_boot_volume_attachment_facts:
-    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    availability_domain: "{{ item[1].value }}"
-    compartment_id: "{{ item[0].key }}"
-  with_nested: 
-    - '{{ compartments | dict2items }}'
-    - '{{ ads | dict2items }}'
-  register: attached_bootvol
-  loop_control:
-    label: "{{ item[0].value, item[1].value }}"
-
-- name: show attached boot vols
-  debug:
-    msg: "{{ attached_bootvol }}"
-
-- name: "creating boot volume attachement dict from json data"
-  set_fact:
-    attachedbootvol: '{{ attachedbootvol | default({}) | combine ( {item.boot_volume_id : [item.display_name, item.lifecycle_state, compartments[item.compartment_id], compute[item.instance_id][0]  ]} ) }}'
-  with_items: '{{ attached_bootvol | json_query ( "results[*].boot_volume_attachments[*]" ) }}'
-  loop_control:
-    label: "{{ item.display_name }}"
-
-- name: 'Write out CSV header for attached boot volume'
-  lineinfile:
-    create: 'no'
-    insertafter: 'EOF'
-    line: "\n\nCompartment,Attched-to-Instance,Hostname,Creation-Time,OCID,Lifecycle-State,Availability-Domain,Boot-Vol-ID"
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-    state: 'present'
-
-- name: 'Write out CSV content for attached boot volumes'
-  lineinfile:
-    create: 'no'
-    insertafter: 'EOF'
-    line: "{{ compartments[item.compartment_id] }},{{ compute[item.instance_id][0] }},{{ compute[item.instance_id][7][0] }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.boot_volume_id }}"
-    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
-    state: 'present'
-  with_items: '{{ attached_bootvol | json_query ( "results[*].boot_volume_attachments[*]" ) }}'
-  loop_control:
-    label: '{{ compute[item.instance_id][7][0] }}'

@@ -1,0 +1,38 @@
+- name: "Gathering all available attached boot volumes in tenancy"
+  oci_compute_boot_volume_attachment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    availability_domain: "{{ item[1].value }}"
+    compartment_id: "{{ item[0].key }}"
+  with_nested: 
+    - '{{ compartments | dict2items }}'
+    - '{{ ads | dict2items }}'
+  register: attached_bootvol
+  loop_control:
+    label: "{{ item[0].value, item[1].value }}"
+
+- name: "creating boot volume attachement dict from json data"
+  set_fact:
+    attachedbootvol: '{{ attachedbootvol | default({}) | combine ( {item.boot_volume_id : [item.display_name, item.lifecycle_state, compartments[item.compartment_id], compute[item.instance_id][7][0]  ]} ) }}'
+  with_items: '{{ attached_bootvol | json_query ( "results[*].boot_volume_attachments[*]" ) }}'
+  loop_control:
+    label: '{{ compute[item.instance_id][7][0] }}'
+
+- name: 'Write out CSV header for attached boot volume'
+  lineinfile:
+    line: '\1,Boot-Vol-Id,Boot-Vol-State'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    regexp: '^Ocid,compartment,.*$'
+    backrefs: yes
+    state: 'present'
+
+- name: 'Write out CSV content for attached boot volumes'
+  lineinfile:
+    line: '\1,{{ item.boot_volume_id }},{{ item.lifecycle_state }}'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    regexp: '^{{ item.instance_id }},.*$'
+    backrefs: yes
+    state: 'present'
+  with_items: '{{ attached_bootvol | json_query ( "results[*].boot_volume_attachments[*]" ) }}'
+  loop_control:
+    label: '{{ compute[item.instance_id][7][0] }}'

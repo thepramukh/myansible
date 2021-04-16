@@ -1,0 +1,35 @@
+- name: "Gathering all available attached block volumes to computes in tenancy"
+  oci_compute_volume_attachment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: attached_blockvol_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating attached block volumes dict from json data"
+  set_fact:
+    attached_blockvol: '{{ attached_blockvol | default({}) | combine ( {item.volume_id : [item.display_name, compartments[item.compartment_id], item.attachment_type, item.device, compute[item.instance_id][7][0], item.lifecycle_state ]} ) }}'
+  with_items: '{{ attached_blockvol_list | json_query ( "results[*].volume_attachments[*]" ) }}'
+  loop_control:
+    label: "{{ compute[item.instance_id][7][0] }}"
+
+- name: 'Write out CSV header for attached block volumes'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nCompartment,Attached-to-Host,Type,Device,Creation-Time,OCID,State,Availability-Domain,Volume-ID"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for attached block volumes'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ compute[item.instance_id][7][0] }},{{ item.attachment_type }},{{ item.device }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.volume_id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    state: 'present'
+  with_items: '{{ attached_blockvol_list | json_query ( "results[*].volume_attachments[*]" ) }}'
+  loop_control:
+    label: '{{ compute[item.instance_id][7][0] }}'

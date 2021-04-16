@@ -1,0 +1,35 @@
+- name: "Gathering all available attached vnic to computes in tenancy"
+  oci_compute_vnic_attachment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: attached_vnic_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating attached vnic dict from json data"
+  set_fact:
+    attached_vnic: '{{ attached_vnic | default({}) | combine ( {item.vnic_id : [item.display_name, compartments[item.compartment_id], subnet[item.subnet_id][0], compute[item.instance_id][7][0]  ]} ) }}'
+  with_items: '{{ attached_vnic_list | json_query ( "results[*].vnic_attachments[*]" ) }}'
+  loop_control:
+    label: '{{ compute[item.instance_id][7][0] }}'
+
+- name: 'Write out CSV header for attached boot volume'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nCompartment,Attached-to-Host,Creation-Time,OCID,Lifecycle-State,Availability-Domain,Vnic-ID"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for attached boot volumes'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ compute[item.instance_id][7][0] }},{{ item.time_created.split('.')[0] }},{{ item.id }},{{ item.lifecycle_state }},{{ item.availability_domain }},{{ item.vnic_id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/compute.csv"
+    state: 'present'
+  with_items: '{{ attached_vnic_list | json_query ( "results[*].vnic_attachments[*]" ) }}'
+  loop_control:
+    label: '{{ compute[item.instance_id][7][0] }}'
