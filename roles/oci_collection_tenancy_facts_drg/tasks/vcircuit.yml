@@ -1,0 +1,39 @@
+- name: "Gathering Virtual Circuit details"
+  oci_network_virtual_circuit_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: vcircuit_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating Virtual Circuit dict from json data"
+  set_fact:
+    vcircuit: '{{ vcircuit | default({}) | combine ( {item.id : [ item.display_name, item.bandwidth_shape_name, compartments[item.compartment_id], item.bgp_management, item.bgp_session_state, item.cross_connect_mappings, item.customer_asn, item.customer_bgp_asn,  item.gateway_id, item.lifecycle_state, item.oracle_bgp_asn, item.provider_name, item.provider_service_id, item.provider_service_key_name, item.provider_service_name, item.provider_state, item.public_prefixes, item.reference_comment, item.region, item.service_type, item.type ]} ) }}'
+  with_items: '{{ vcircuit_list | json_query ( "results[*].virtual_circuits[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for Virtual Circuit'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nVirtual-Circuit,Compartment,Bandwidth-Shape,BGP-Management,BGP-Session-State,Customer-BGP-Peering-IP,Oracle-BGP-Peering-IP,VLAN,CustomerASN,Customer-BGP-ASN,GatewayID,State,Oracle-BGP-ASN,Provider-Name,Provide-ID,Provider-Service-Name,Provider-State,Comment,Service-Type,Type,Creation-Time,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+
+- name: show
+  debug:
+    msg: '{{ vcircuit_list | json_query ( "results[*].virtual_circuits[*].cross_connect_mappings[0]" ) }}'
+
+- name: 'Write out CSV content for Virtual Circuit'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: '{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.bandwidth_shape_name }},{{ item.bgp_management }},{{ item.bgp_session_state }},{{ item.cross_connect_mappings | json_query ("[0].[ customer_bgp_peering_ip, oracle_bgp_peering_ip, vlan]") | join(",") }},{{ item.customer_asn }},{{ item.customer_bgp_asn }},{{ item.gateway_id }},{{ item.lifecycle_state }},{{ item.oracle_bgp_asn }},{{ item.provider_name }},{{ item.provider_service_id }},{{ item.provider_service_name }},{{ item.provider_state }},{{ item.reference_comment }},{{ item.service_type }},{{ item.type }},{{ item.time_created.split(".")[0] }},{{ item.id }}'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+  with_items: '{{ vcircuit_list | json_query ( "results[*].virtual_circuits[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

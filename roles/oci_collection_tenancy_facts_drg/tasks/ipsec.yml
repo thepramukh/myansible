@@ -1,0 +1,71 @@
+- name: "Gathering IPSec details"
+  oci_network_ip_sec_connection_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: ipsec_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating IPSec dict from json data"
+  set_fact:
+    ipsec: '{{ ipsec | default({}) | combine ( {item.id : [ item.display_name, compartments[item.compartment_id], item.cpe_id,item.cpe_local_identifier,drg[item.drg_id][0],item.lifecycle_state,item.static_routes]} ) }}'
+  with_items: '{{ ipsec_list | json_query ( "results[*].ip_sec_connections[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for IPSec'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nIPsec,Compartment,CPE-ID,CPE-Identifier,CPE-Type,DRG,State,Creation-Time,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for IPSec'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.cpe_id }},{{ item.cpe_local_identifier }},{{ item.cpe_local_identifier_type }},{{ drg[item.drg_id][0] }},{{ item.lifecycle_state }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+  with_items: '{{ ipsec_list | json_query ( "results[*].ip_sec_connections[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: "Gathering IPSec Tunnel details"
+  oci_network_ip_sec_connection_tunnel_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    ipsc_id: "{{ item.key  }}"
+  loop: '{{ ipsec | dict2items }}'
+  register: ipsec_tunnel_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating IPSec Tunnel dict from json data"
+  set_fact:
+    ipsec_tunnel: '{{ ipsec_tunnel | default({}) | combine ( {item.id : [ item.display_name, compartments[item.compartment_id], item.bgp_session_info,item.cpe_ip,item.vpn_ip,item.lifecycle_state,item.status]} ) }}'
+  with_items: '{{ ipsec_tunnel_list | json_query ( "results[*].ip_sec_connection_tunnels[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for IPSec Tunnel'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nIPsec-Tunnel,Compartment,CPE-IP,IKE-Version,Routing,,Tunnel-Status,VPN-IP,State,Creation-Time,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for IPSec Tunnel'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: '{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.cpe_ip }},{{ item.ike_version }},{{ item.routing }},{{ item.status }},{{ item.vpn_ip }},{{ item.lifecycle_state }},{{ item.time_created.split(",")[0] }},{{ item.id }}'
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+  with_items: '{{ ipsec_tunnel_list | json_query ( "results[*].ip_sec_connection_tunnels[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

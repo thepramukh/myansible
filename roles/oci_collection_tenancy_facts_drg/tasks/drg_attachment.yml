@@ -1,0 +1,35 @@
+- name: "Gathering DRG attachment details"
+  oci_network_drg_attachment_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: drgattachment_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating DRG dict from json data"
+  set_fact:
+    drgattach: '{{ drgattach | default({}) | combine ( {item.id : [ item.display_name, drg[item.drg_id][0], compartments[item.compartment_id], route_table[item.route_table_id][0], vcn[item.vcn_id][0] ]} ) }}'
+  with_items: '{{ drgattachment_list | json_query ( "results[*].drg_attachments[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for DRG Attachments'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nDRG,Compartment,Drg-ID,State,Route-Table,VCN,Creation-Time,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for DRG Attachments'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.drg_id }},{{ item.lifecycle_state }},{{ route_table[item.route_table_id][0] }},{{ vcn[item.vcn_id][0] }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+  with_items: '{{ drgattachment_list | json_query ( "results[*].drg_attachments[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"

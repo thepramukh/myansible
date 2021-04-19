@@ -10,5 +10,25 @@
     name: oci_collection_tenancy_facts_compandads
   when: compartments is not defined
 
+- name: validating role oci_collection_tenancy_facts_network
+  include_role:
+    name: oci_collection_tenancy_facts_network
+  when: vcn is not defined
+
 - name: 'Starting drg playbook'
   include_tasks: 'drg.yml'
+
+- name: 'Starting drg attachment playbook'
+  include_tasks: 'drg_attachment.yml'
+
+- name: 'Starting cpe playbook'
+  include_tasks: 'cpe.yml'
+
+- name: 'Starting ipsec playbook'
+  include_tasks: 'ipsec.yml'
+
+- name: 'Starting remote peering gateway playbook'
+  include_tasks: 'rpg.yml'
+
+- name: 'Starting virtual circuit playbook'
+  include_tasks: 'vcircuit.yml'

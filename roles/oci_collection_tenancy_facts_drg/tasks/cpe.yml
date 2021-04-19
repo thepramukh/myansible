@@ -1,0 +1,35 @@
+- name: "Gathering CPE details"
+  oci_network_cpe_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: cpe_list
+  loop_control:
+    label: "{{ item.value }}"
+
+- name: "creating CPE dict from json data"
+  set_fact:
+    cpe: '{{ cpe | default({}) | combine ( {item.id : [ item.display_name, compartments[item.compartment_id], item.ip_address]} ) }}'
+  with_items: '{{ cpe_list | json_query ( "results[*].cpes[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
+
+- name: 'Write out CSV header for CPE'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "\n\nCPE,Compartment,IpAddr,Creation-Time,ocid"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+
+- name: 'Write out CSV content for CPE'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.display_name }},{{ compartments[item.compartment_id] }},{{ item.ip_address }},{{ item.time_created.split('.')[0] }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/drg.csv"
+    state: 'present'
+  with_items: '{{ drgattachment_list | json_query ( "results[*].drg_attachments[*]" ) }}'
+  loop_control:
+    label: "{{ item.display_name }}"
