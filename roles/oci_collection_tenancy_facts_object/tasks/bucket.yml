@@ -1,0 +1,110 @@
+
+- name: show namespace variable value
+  debug:
+    msg: "{{ oci_tenancy }}"
+
+
+- name: "Gathering all available Buckets details in tenancy"
+  oci_object_storage_bucket_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    namespace_name: "{{ oci_tenancy }}"
+    compartment_id: "{{ item.key  }}"
+  loop: '{{ compartments | dict2items }}'
+  register: Bucket_list
+  loop_control:
+    label: "{{ item.value }}"
+
+
+
+
+
+
+- name: "creating Bucket dict from json data"
+  set_fact:
+    bucket: '{{ bucket | default({}) | combine ( {item.name : [ item.time_created]} ) }}'
+  with_items: '{{ Bucket_list | json_query ( "results[*].buckets[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+
+
+
+
+- name: check bucket facts info
+  debug:
+    msg: '{{ bucket | dict2items }}'
+
+
+
+
+- name: "Gathering all available Buckets Facts  in tenancy"
+  oci_object_storage_bucket_facts:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    namespace_name: "{{ oci_tenancy }}"
+    bucket_name: "{{ item.key  }}"
+  loop: '{{ bucket | dict2items }}'
+  register: Bucket_name_list
+  loop_control:
+    label: "{{ item.key }}"
+
+
+
+- name: check bucket facts list info
+  debug:
+    msg: '{{ Bucket_name_list | json_query ( "results[*].buckets[*]" ) }}'
+
+
+
+
+- name: "creating Bucket facts dict from json data"
+  set_fact:
+    bucket_facts: '{{ bucket_facts | default({}) | combine ( {item.id : [ item.name, item.time_created, item.approximate_size]} ) }}'
+  with_items: '{{ Bucket_name_list | json_query ( "results[*].buckets[*]" ) }}'
+  loop_control:
+    label: "{{ item.name }}"
+
+
+
+- name: 'Write out CSV header'
+  copy:
+    content: "Compartment,Bucket_Name,Creation-Time,Size,OCID"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/Bucket.csv"
+
+
+
+- name: 'Write out CSV content'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ compartments[item.compartment_id] }},{{ item.name }},{{ item.time_created.split('.')[0] }},{{ item.approximate_size }},{{ item.id }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/Bucket.csv"
+    regexp: '^{{ compartments[item.compartment_id] }},{{ item.name }},.*$'
+    state: 'present'
+  with_items: '{{ Bucket_name_list | json_query ( "results[*].buckets[*]" ) }}'
+  loop_control:
+    label: '{{ item.name }}'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

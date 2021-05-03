@@ -1,19 +1,19 @@
 ---
 # tasks file for oci_collection_tenancy_decommission_compute_shutdown
-- name: These instances are ready to be shutdown.
-  debug:
-    var: compute
+#- name: These instances are ready to be shutdown.
+#  debug:
+#    var: compute
 
-- name: Input required from user to proceed.
-  pause:
-    prompt: Press Ctrl + C to abort or Enter to continue.
+#- name: Input required from user to proceed.
+#  pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
 
-- name: Perform action stop on instance
-  oci_compute_instance_actions:
-    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-    instance_id: "{{ item.key }}"
-    action: softstop
-  with_items: '{{ compute | dict2items }}'
-  loop_control:
-    label: "{{ item.value[7] }}"
+#- name: Perform action stop on instance
+#  oci_compute_instance_actions:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#    instance_id: "{{ item.key }}"
+#    action: softstop
+#  with_items: '{{ compute | dict2items }}'
+#  loop_control:
+#    label: "{{ item.value[7] }}"

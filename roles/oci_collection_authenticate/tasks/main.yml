@@ -45,6 +45,7 @@
   stat:
     path: '{{ oci_local_homedir }}/.oci/config'
   register: 'results'
+
 - name: 'Read tenancy configuration'
   delegate_to: 'localhost'
   set_fact:
@@ -53,37 +54,38 @@
     oci_config_key_file: "{{ lookup('ini', 'key_file section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
     oci_config_tenancy: "{{ lookup('ini', 'tenancy section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
     oci_config_region: "{{ lookup('ini', 'region section=' + oci_tenancy + '_' + oci_datacenter + ' file=' + oci_local_homedir + '/.oci/config') }}"
-#- name: 'Fetch Region Facts'
-#  collections:
-#    - 'oracle.oci'
-#  delegate_to: 'localhost'
-#  oci_identity_region_facts:
-#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-#  register: 'oci_region_facts'
-#- name: 'Fetch Tenancy Facts'
-#  collections:
-#    - 'oracle.oci'
-#  delegate_to: 'localhost'
-#  oci_identity_tenancy_facts:
-#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-#    tenancy_id: '{{ oci_config_tenancy }}'
-#  register: 'oci_tenancy_facts'
-#- name: 'Fetch Service Facts'
-#  collections:
-#    - 'oracle.oci'
-#  delegate_to: 'localhost'
-#  oci_network_service_facts:
-#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-#  register: 'oci_service_facts'
-#- name: 'Remember our facts'
-#  delegate_to: 'localhost'
-#  set_fact:
-#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
-#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-#    oci_region_facts: '{{ oci_region_facts }}'
-#    oci_tenancy_facts: '{{ oci_tenancy_facts }}'
-#    oci_service_facts: '{{ oci_service_facts }}'
-#    oci_service_ocid: '{{ oci_service_facts | json_query ( "services[0].id" ) | trim }}'
+
+- name: 'Fetch Region Facts'
+  collections:
+   - 'oracle.oci'
+  delegate_to: 'localhost'
+  oci_identity_region_facts:
+   config_file_location: '{{ oci_local_homedir }}/.oci/config'
+   config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+  register: 'oci_region_facts'
+- name: 'Fetch Tenancy Facts'
+  collections:
+   - 'oracle.oci'
+  delegate_to: 'localhost'
+  oci_identity_tenancy_facts:
+   config_file_location: '{{ oci_local_homedir }}/.oci/config'
+   config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+   tenancy_id: '{{ oci_config_tenancy }}'
+  register: 'oci_tenancy_facts'
+- name: 'Fetch Service Facts'
+  collections:
+   - 'oracle.oci'
+  delegate_to: 'localhost'
+  oci_network_service_facts:
+   config_file_location: '{{ oci_local_homedir }}/.oci/config'
+   config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+  register: 'oci_service_facts'
+- name: 'Remember our facts'
+  delegate_to: 'localhost'
+  set_fact:
+   config_file_location: '{{ oci_local_homedir }}/.oci/config'
+   config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+   oci_region_facts: '{{ oci_region_facts }}'
+   oci_tenancy_facts: '{{ oci_tenancy_facts }}'
+   oci_service_facts: '{{ oci_service_facts }}'
+   oci_service_ocid: '{{ oci_service_facts | json_query ( "services[0].id" ) | trim }}'
