@@ -12,11 +12,6 @@
   loop_control:
     label: "{{ item[0].value, item[1].value }}"
 
-- name: check all fss list
-  debug:
-    msg: "{ fss_list }"
-
-
 - name: "creating FSS dict from json data"
   set_fact:
     fss: '{{ fss | default({}) | combine ( {item.id : [item.display_name, item.time_created]} ) }}'
@@ -41,11 +36,6 @@
   loop_control:
     label: '{{ item.display_name }}'
 
-
-
-
-
-
 - name: "Gathering all available Mount targets details in tenancy"
   oci_file_storage_mount_target_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
@@ -58,11 +48,6 @@
   register: mountar_list
   loop_control:
     label: "{{ item[0].value, item[1].value }}"
-
-- name: check all fss list
-  debug:
-    msg: "{ mountar_list }"
-
 
 - name: "creating Mount Target dict from json data"
   set_fact:
@@ -88,42 +73,15 @@
   loop_control:
     label: '{{ item.display_name }}'
 
-
-
-# - name: "show fss list  data"
-#   debug:
-#     var=fss_list
-
-- name: MTs output
-  debug: 
-    msg: "{{ mts | dict2items }}"
-
-
-
-
-
-
-
-
-    #################oci_file_storage_export_set_facts###############
-
 - name: "Gathering exportsset details in tenancy"
   oci_file_storage_export_facts:
     config_file_location: '{{ oci_local_homedir }}/.oci/config'
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
-#     compartment_id: "{{ item.value[1]  }}"
     export_set_id: "{{ item.value[2] }}"
   loop: '{{ mts | dict2items }}'
   register: exportset_list
   loop_control:
     label: "{{ item.value[0] }}"
-
-
-
-- name: export SET OUTPUT
-  debug: 
-    msg: '{{ exportset_list | json_query ( "results[*].exports[*]" ) }}'
-
 
 - name: "creating exportsset dict from json data"
   set_fact:
@@ -132,16 +90,9 @@
   loop_control:
     label: "{{ item.path }}"    
 
-
-# - name: 'Write out CSV header'
-#   copy:
-#     content: "Compartment,MT_Name,Creation-Time,OCID,State,Exportset-ID"
-#     dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/fss.csv"
-
 - name: 'Write out CSV content for exportset'
   lineinfile:
     create: 'no'
-    #insertafter: 'EOF'
     line: "{{ item.path }},{{ item.id }},{{ item.lifecycle_state }},{{ item.export_set_id }}"
     path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ oci_tenancy + '_' + oci_datacenter }}/fss.csv"
     insertafter: '{{ item.file_system_id }}'
@@ -149,9 +100,3 @@
   with_items: '{{ exportset_list | json_query ( "results[*].exports[*]" ) }}'
   loop_control:
     label: '{{ item.path }}'
-
-    
-
-
-
-
