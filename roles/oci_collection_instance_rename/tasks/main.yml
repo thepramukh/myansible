@@ -1,0 +1,30 @@
+---
+# tasks file for oci_collection_instance_rename
+- name: Validating role oci_collection_authenticate
+  include_role:
+    name: oci_collection_authenticate
+  when: oci_local_username is not defined
+
+- name: validating role  oci_collection_tenancy_facts_compandads
+  include_role:
+    name: oci_collection_tenancy_facts_compandads
+  when: compartments is not defined
+
+- name: Validating Prequisite role 
+  include_role:
+    name: '{{ userroles }}'
+  loop:
+    #- oci_collection_tenancy_facts_compute
+     - oci_collection_tenancy_facts_dbaas
+    #- oci_collection_tenancy_facts_fss
+    #- oci_collection_tenancy_facts_lbaas
+    # - oci_collection_tenancy_facts_block
+  loop_control:
+    loop_var: userroles
+  when: compute is not defined
+
+- name: 'Starting instance playbook'
+  include_tasks: 'instance.yml'
+
+# - name: 'Starting Rename playbook'
+#   include_tasks: 'rename.yml'

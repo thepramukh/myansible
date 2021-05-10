@@ -1,0 +1,271 @@
+- name: Add 7 days to Current Date
+  set_fact:
+    decom_date: "{{ '%Y-%m-%d' | strftime( ( ansible_date_time.epoch | int ) + ( 86400 * 7 )  ) }}"
+
+- name: show decom_date output
+  debug:
+   msg: "{{ decom_date }}"
+
+
+###############################################COMPUTE RENAME###########################
+
+
+
+
+
+
+
+# - name: Set facts for Instance-SID
+#   set_fact:
+#     instance_sid: '{{ instance_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ compute | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+# - name: show instance_sid list
+#   debug:
+#     msg: "{{ instance_sid | dict2items }}"
+
+
+
+# - name: These Instances are ready to  Rename.
+#   debug:
+#     msg: "Instance OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}" 
+#   with_items: '{{ instance_sid | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[4] }}"
+
+
+# - name: Input required from user to proceed.
+#   pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+
+# - name: Updating and Renaming instances
+#   oci_compute_instance:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+#     instance_id: "{{ item.key }}"
+#   with_items: "{{ instance_sid | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+
+
+
+
+# #################################BLOCK VOLUME################################################
+
+# - name: show attached_blockvol_list  dict
+#   debug:
+#     msg:  '{{ attached_blockvol | dict2items }}'
+
+
+
+# - name: Set facts for Block-SID
+#   set_fact:
+#     block_sid: '{{ block_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ attached_blockvol | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[4] }}"
+#   when:  USID |upper in  item.value[4] or USID |lower in  item.value[4]
+
+# - name: show block_sid TO RENAME  dict
+#   debug:
+#     msg:  '{{ block_sid | dict2items }}'  
+
+
+
+# - name: These Block Volumes are ready to be Rename.
+#   debug:
+#     msg: " BV OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[4] }}"
+#   with_items: '{{ block_sid | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[4] }}"
+
+
+# - name: Input required from user to proceed.
+#   pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+# - name: Updating and Renaming Block Volume
+#   oci_blockstorage_volume:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     display_name: "{{ item.value[4] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+#     volume_id: "{{ item.key }}"
+#   with_items: "{{ block_sid | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[4] }}"
+
+
+
+
+###################################LBAAS##############################################
+# - name: show lbaas output
+#   debug:
+#     msg:  '{{ lbaas | dict2items }}' 
+
+# - name: Set facts for LBAAS-SID
+#   set_fact:
+#     lbaas_sid: '{{ lbaas_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ lbaas | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+# - name: show lbaas_sid TO RENAME  dict
+#   debug:
+#     msg:  '{{ lbaas_sid | dict2items }}'  
+
+
+
+# - name: These LBAAS are ready to be Rename.
+#   debug:
+#     msg: " LBAAS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+#   with_items: '{{ lbaas_sid | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[0] }}"
+
+
+# - name: Input required from user to proceed.
+#   pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+# - name: Updating and Renaming Load BALANCER
+#   oci_loadbalancer_load_balancer:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+#     load_balancer_id: "{{ item.key }}"
+#   with_items: "{{ lbaas_sid | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+
+
+
+
+
+##########################################FSS#######################################
+
+# - name: Set facts for FSS-SID
+#   set_fact:
+#     fss_sid: '{{ fss_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ fss | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+# - name: show FSS TO RENAME  dict
+#   debug:
+#     msg:  '{{ fss_sid | dict2items }}'  
+
+
+
+# - name: These FSS are ready to be Rename.
+#   debug:
+#     msg: " FSS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+#   with_items: '{{ fss_sid | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[0] }}"
+
+
+# - name: Input required from user to proceed.
+#   pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+# - name: Updating and Renaming FILE SYSTEM
+#   oci_file_storage_file_system:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+#     file_system_id: "{{ item.key }}"
+#   with_items: "{{ fss_sid | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+
+
+
+
+
+
+
+
+##########################################FSS#######################################
+
+
+
+
+- name: Set facts for DBAAS-SID
+  set_fact:
+    dbaas_sid: '{{ dbaas_sid | default({}) | combine ( {item.key : item.value } ) }}'
+  with_items: "{{ dbaas | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+
+- name: show DBAAS-SID to Rename
+  debug:
+    msg: "{{ dbaas_sid | dict2items }}"
+
+
+
+# - name: These DBAAS are ready to be Rename.
+#   debug:
+#     msg: " FSS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+#   with_items: '{{ dbaas_sid | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[0] }}"
+
+
+
+# - name: Input required from user to proceed.
+#   pause:
+#    prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+# - name: Updating and Renaming FILE SYSTEM
+#   oci_file_storage_file_system:
+#     config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#     display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+#     file_system_id: "{{ item.key }}"
+#   with_items: "{{ fss_sid | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+
+
+
+
+
+
+
+
+
+# - name: show dbass_sid list
+#   debug:
+#     msg: "{{ dbass_sid | dict2items }}"
+
+
+# - name: show fss_sid list
+#   debug:
+#     msg: "{{ fss_sid | dict2items }}"
+
+# - name: show lbaas_sid list
+#   debug:
+#     msg: "{{ lbaas_sid | dict2items }}"
+
