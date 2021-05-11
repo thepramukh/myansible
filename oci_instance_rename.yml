@@ -1,6 +1,7 @@
 ---
 # tasks file for oci_authenticate
 - name: Instance Rename Role.
+<<<<<<< HEAD
   gather_facts: "false"
   hosts: localhost
   # vars_prompt:
@@ -8,6 +9,10 @@
   #   - name: rfc
   #     prompt: "Enter the RFC#"
   #     private: no
+=======
+#  gather_facts: "false"
+  hosts: localhost
+>>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
 
   collections:
     - 'oracle.oci'
@@ -16,7 +21,11 @@
     - role: oci_collection_tenancy_facts_compandads
 
 - name: Gathering various Instance specific facts to rename
+<<<<<<< HEAD
   gather_facts: "false"
+=======
+  gather_facts: "true"
+>>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
   hosts: localhost
   collections:
     - 'oracle.oci'

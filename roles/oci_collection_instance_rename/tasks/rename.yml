@@ -154,3 +154,12 @@
   loop_control:
     label: "{{ item.value[0] }}"
   when: action == 'shutdown'
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436

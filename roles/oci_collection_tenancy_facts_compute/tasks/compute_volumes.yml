@@ -33,3 +33,5 @@
   with_items: '{{ attached_blockvol_list | json_query ( "results[*].volume_attachments[*]" ) }}'
   loop_control:
     label: '{{ compute[item.instance_id][7][0] }}'
+
+

@@ -165,3 +165,12 @@
 - name: show dbnodes DICT TO USE FOR SHUTDOWN
   debug:
     msg: "{{ dbnode_sid | dict2items }}"
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436

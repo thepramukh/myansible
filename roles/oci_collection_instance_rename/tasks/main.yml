@@ -31,4 +31,9 @@
   include_tasks: 'instance.yml'
 
 - name: 'Starting Rename playbook'
+<<<<<<< HEAD
   include_tasks: 'rename.yml'
+=======
+  include_tasks: 'rename.yml'
+
+>>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
