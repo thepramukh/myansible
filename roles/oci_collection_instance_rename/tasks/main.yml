@@ -10,21 +10,26 @@
     name: oci_collection_tenancy_facts_compandads
   when: compartments is not defined
 
+- name: Print compartment name
+  debug:
+    msg: "{{ compartments }}"
+
 - name: Validating Prequisite role 
   include_role:
     name: '{{ userroles }}'
   loop:
-    #- oci_collection_tenancy_facts_compute
-     - oci_collection_tenancy_facts_dbaas
-    #- oci_collection_tenancy_facts_fss
-    #- oci_collection_tenancy_facts_lbaas
-    # - oci_collection_tenancy_facts_block
+    - oci_collection_tenancy_facts_compute
+    - oci_collection_tenancy_facts_dbaas
+    - oci_collection_tenancy_facts_fss
+    - oci_collection_tenancy_facts_lbaas
+    - oci_collection_tenancy_facts_block
   loop_control:
     loop_var: userroles
-  when: compute is not defined
+  when: dbaas is not defined or compute is not defined
 
 - name: 'Starting instance playbook'
   include_tasks: 'instance.yml'
 
-# - name: 'Starting Rename playbook'
-#   include_tasks: 'rename.yml'
+- name: 'Starting Rename playbook'
+  include_tasks: 'rename.yml'
+

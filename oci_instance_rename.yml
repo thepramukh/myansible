@@ -1,0 +1,20 @@
+---
+# tasks file for oci_authenticate
+- name: Instance Rename Role.
+#  gather_facts: "false"
+  hosts: localhost
+
+  collections:
+    - 'oracle.oci'
+  roles:
+    - role: oci_collection_authenticate
+    - role: oci_collection_tenancy_facts_compandads
+
+- name: Gathering various Instance specific facts to rename
+  gather_facts: "true"
+  hosts: localhost
+  collections:
+    - 'oracle.oci'
+  roles:
+    - { role: oci_collection_instance_rename, tags: ['frename'] }
+
