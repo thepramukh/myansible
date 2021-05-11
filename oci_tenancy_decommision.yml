@@ -15,8 +15,10 @@
   collections:
     - 'oracle.oci'
   roles:
+    
     - { role: oci_collection_tenancy_facts_network, tags: ['fnet'] }
     - { role: oci_collection_tenancy_facts_compute, tags: ['fcompute'] }
+    #- { role: oci_collection_tenancy_decommission_compute_shutdown, tags: ['fshut'] }
     - { role: oci_collection_tenancy_facts_fss, tags: ['ffss'] }
     - { role: oci_collection_tenancy_facts_object, tags: ['fobj'] }
     - { role: oci_collection_tenancy_facts_iam, tags: ['fiam'] }

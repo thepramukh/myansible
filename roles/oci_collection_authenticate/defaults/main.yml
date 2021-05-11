@@ -1,2 +1,4 @@
 ---
 # defaults file for oci_collection_authenticate
+oci_tenancy: aucuprr01
+oci_datacenter: iad
