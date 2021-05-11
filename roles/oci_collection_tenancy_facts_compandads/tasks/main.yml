@@ -18,6 +18,7 @@
   loop: '{{ oci_compartment_id | json_query ( "compartments[*]" ) }}'
   loop_control:
     label: "{{ item.name }}"
+  when: "{{ item.lifecycle_state  == 'ACTIVE' }}"
 
 - name: "Gathering tenancy ad facts"
   oci_identity_availability_domain_facts:

@@ -1,0 +1,117 @@
+# - name: "creating compute dict from json data"
+#   set_fact:
+#     compute: '{{ compute | default({}) | combine ( {"ocid.aaa.bbb.cc" : ["IAD-AD1-BLSCSOATST-PVTMT001"]} ) }}'
+
+
+# - name: Debug for Instance
+#   debug:
+#     msg: "{{ item.value }}"
+#   with_items: "{{ compute | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+- name: Set facts for Instance-SID
+  set_fact:
+    instance_sid: '{{ instance_sid | default({}) | combine ( {item.key : item.value } ) }}'
+  with_items: "{{ compute | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+- name: show instance_sid list
+  debug:
+    msg: "{{ instance_sid | dict2items }}"
+
+- name: Add 7 days to Current Date
+  set_fact:
+    decom_date: "{{ '%Y-%m-%d' | strftime( ( ansible_date_time.epoch | int ) + ( 86400 * 7 )  ) }}"
+
+- name: show decom_date output
+  debug:
+   msg: "{{ decom_date }}"
+
+- name: Updating and Renaming instances
+  oci_compute_instance:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    display_name: "{{ item.value[0] }}_{{ decom_date }}"
+    instance_id: "{{ item.key }}"
+  with_items: "{{ instance_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+
+# - name: Perform action stop on instance
+#   oci_compute_instance_actions:
+#    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+#    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+#    instance_id: "{{ item.key }}"
+#    action: stop
+#   with_items: '{{ compute | dict2items }}'
+#   loop_control:
+#    label: "{{ item.value[7] }}"
+
+
+
+
+# - name: Set facts for DBAAS-SID
+#   set_fact:
+#     dbass_sid: '{{ dbass_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ dbaas | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+
+# - name: Set facts for FSS-SID
+#   set_fact:
+#     fss_sid: '{{ fss_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ fss | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+# - name: Set facts for LBAAS-SID
+#   set_fact:
+#     lbaas_sid: '{{ lbaas_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ lbaas | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+# - name: Set facts for Block-SID
+#   set_fact:
+#     blockvolume_sid: '{{ blockvolume_sid | default({}) | combine ( {item.key : item.value } ) }}'
+#   with_items: "{{ blockvolume | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[0] }}"
+#   when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+
+
+
+# - name: show instance_sid list
+#   debug:
+#     msg: "{{ instance_sid | dict2items }}"
+
+
+# - name: show dbass_sid list
+#   debug:
+#     msg: "{{ dbass_sid | dict2items }}"
+
+
+# - name: show fss_sid list
+#   debug:
+#     msg: "{{ fss_sid | dict2items }}"
+
+# - name: show lbaas_sid list
+#   debug:
+#     msg: "{{ lbaas_sid | dict2items }}"
+
+# - name: show blockvolume_sid list
+#   debug:
+#     msg: "{{ blockvolume_sid | dict2items }}"
+

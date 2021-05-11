@@ -1,0 +1,156 @@
+#tasks  for oci_collection_tenancy_decommission_compute Rename
+
+- name: These Compute Instances are ready to  Rename.
+  debug:
+    msg: "Instance OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}" 
+  with_items: '{{ instance_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[4] }}"
+
+
+- name: Input required from user to proceed.
+  pause:
+   prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+
+- name: Updating and Renaming instances
+  oci_compute_instance:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+    instance_id: "{{ item.key }}"
+  with_items: "{{ instance_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when: action == 'shutdown'
+  
+#tasks for oci_collection_tenancy_decommission_compute_shutdown
+
+
+- name: Perform action stop on instance
+  oci_compute_instance_actions:
+   config_file_location: '{{ oci_local_homedir }}/.oci/config'
+   config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+   instance_id: "{{ item.key }}"
+   action: stop
+  with_items: '{{ instance_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[0] }}"
+  when: action == 'shutdown'
+
+#tasks for oci_collection_tenancy_decommission DBAAS SHUTDOWN
+
+- name: These DBNODES are ready to be Shutdown
+  debug:
+    msg: " DBNODE OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+  with_items: '{{ dbnode_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[0] }}"
+
+
+
+- name: Input required from user to proceed.
+  pause:
+   prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+- name: SHUTTING DOWN DB_NODE for Requested DB System
+  oci_database_db_node_actions:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    db_node_id: "{{ item.key }}"
+    action: stop
+  with_items: "{{ dbnode_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when: action == 'shutdown'
+
+
+
+
+#tasks for oci_collection_tenancy_decommission BLOCK VOLUME
+
+- name: These Block Volumes are ready to be Rename.
+  debug:
+    msg: " BV OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[4] }}"
+  with_items: '{{ block_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[4] }}"
+
+
+- name: Input required from user to proceed.
+  pause:
+   prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+- name: Updating and Renaming Block Volume
+  oci_blockstorage_volume:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    display_name: "{{ item.value[4] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+    volume_id: "{{ item.key }}"
+  with_items: "{{ block_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[4] }}"
+  when: action == 'shutdown'
+
+
+
+#tasks for oci_collection_tenancy_decommission LBAAS RENAME
+
+- name: These LBAAS are ready to be Rename.
+  debug:
+    msg: " LBAAS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+  with_items: '{{ lbaas_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[0] }}"
+
+
+- name: Input required from user to proceed.
+  pause:
+   prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+- name: Updating and Renaming Load BALANCER
+  oci_loadbalancer_load_balancer:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+    load_balancer_id: "{{ item.key }}"
+  with_items: "{{ lbaas_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when: action == 'shutdown'
+
+
+#tasks for oci_collection_tenancy_decommission FSS RENAME
+
+- name: These FSS are ready to be Rename.
+  debug:
+    msg: " FSS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
+  with_items: '{{ fss_sid | dict2items }}'
+  loop_control:
+   label: "{{ item.value[0] }}"
+
+
+- name: Input required from user to proceed.
+  pause:
+   prompt: Press Ctrl + C to abort or Enter to continue.
+
+
+
+- name: Updating and Renaming FILE SYSTEM
+  oci_file_storage_file_system:
+    config_file_location: '{{ oci_local_homedir }}/.oci/config'
+    config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
+    display_name: "{{ item.value[0] }}_EXPIRY_{{ decom_date }}_{{ rfc }}"
+    file_system_id: "{{ item.key }}"
+  with_items: "{{ fss_sid | dict2items }}"
+  loop_control:
+    label: "{{ item.value[0] }}"
+  when: action == 'shutdown'
