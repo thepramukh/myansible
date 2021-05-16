@@ -2,12 +2,8 @@
     "_ansible_facts_gathered": true, 
     "ansible_all_ipv4_addresses": [
         "192.168.122.1", 
-<<<<<<< HEAD
-        "10.0.4.15"
-=======
         "10.0.4.15", 
         "192.168.0.102"
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
     ], 
     "ansible_all_ipv6_addresses": [
         "fe80::a400:39a0:2fd1:7528", 
@@ -30,54 +26,35 @@
         "root": "/dev/mapper/rhel-root"
     }, 
     "ansible_date_time": {
-<<<<<<< HEAD
-        "date": "2021-05-06", 
-        "day": "06", 
-        "epoch": "1620293444", 
-        "hour": "15", 
-        "iso8601": "2021-05-06T09:30:44Z", 
-        "iso8601_basic": "20210506T150044094438", 
-        "iso8601_basic_short": "20210506T150044", 
-        "iso8601_micro": "2021-05-06T09:30:44.094559Z", 
-        "minute": "00", 
+        "date": "2021-05-15", 
+        "day": "15", 
+        "epoch": "1621067589", 
+        "hour": "14", 
+        "iso8601": "2021-05-15T08:33:09Z", 
+        "iso8601_basic": "20210515T140309181408", 
+        "iso8601_basic_short": "20210515T140309", 
+        "iso8601_micro": "2021-05-15T08:33:09.181880Z", 
+        "minute": "03", 
         "month": "05", 
-        "second": "44", 
-        "time": "15:00:44", 
-        "tz": "IST", 
-        "tz_offset": "+0530", 
-        "weekday": "Thursday", 
-        "weekday_number": "4", 
-=======
-        "date": "2021-05-08", 
-        "day": "08", 
-        "epoch": "1620479711", 
-        "hour": "18", 
-        "iso8601": "2021-05-08T13:15:11Z", 
-        "iso8601_basic": "20210508T184511730641", 
-        "iso8601_basic_short": "20210508T184511", 
-        "iso8601_micro": "2021-05-08T13:15:11.730765Z", 
-        "minute": "45", 
-        "month": "05", 
-        "second": "11", 
-        "time": "18:45:11", 
+        "second": "09", 
+        "time": "14:03:09", 
         "tz": "IST", 
         "tz_offset": "+0530", 
         "weekday": "Saturday", 
         "weekday_number": "6", 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
-        "weeknumber": "18", 
+        "weeknumber": "19", 
         "year": "2021"
     }, 
     "ansible_default_ipv4": {
-        "address": "10.0.4.15", 
-        "alias": "enp0s9", 
-        "broadcast": "10.0.4.255", 
-        "gateway": "10.0.4.2", 
-        "interface": "enp0s9", 
-        "macaddress": "08:00:27:0d:95:21", 
+        "address": "192.168.0.102", 
+        "alias": "enp0s10", 
+        "broadcast": "192.168.0.255", 
+        "gateway": "192.168.0.1", 
+        "interface": "enp0s10", 
+        "macaddress": "08:00:27:8b:c3:c9", 
         "mtu": 1500, 
         "netmask": "255.255.255.0", 
-        "network": "10.0.4.0", 
+        "network": "192.168.0.0", 
         "type": "ether"
     }, 
     "ansible_default_ipv6": {}, 
@@ -312,12 +289,9 @@
     "ansible_distribution_version": "7.4", 
     "ansible_dns": {
         "nameservers": [
-            "206.223.27.1", 
-            "206.223.27.2", 
             "192.168.0.1"
         ], 
         "search": [
-            "in.oracle.com", 
             "example.com"
         ]
     }, 
@@ -380,15 +354,12 @@
             "vlan_challenged": "off [fixed]"
         }, 
         "hw_timestamp_filters": [], 
-<<<<<<< HEAD
-=======
         "ipv4": {
             "address": "192.168.0.102", 
             "broadcast": "192.168.0.255", 
             "netmask": "255.255.255.0", 
             "network": "192.168.0.0"
         }, 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
         "ipv6": [
             {
                 "address": "fe80::183a:c49f:e536:6e2", 
@@ -508,23 +479,14 @@
         "SELINUX_USE_CURRENT_RANGE": "", 
         "SHELL": "/bin/bash", 
         "SHLVL": "3", 
-<<<<<<< HEAD
-        "SSH_CLIENT": "10.0.4.2 55628 22", 
-        "SSH_CONNECTION": "10.0.4.2 55628 10.0.4.15 22", 
-=======
-        "SSH_CLIENT": "10.0.4.2 58512 22", 
-        "SSH_CONNECTION": "10.0.4.2 58512 10.0.4.15 22", 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
-        "SSH_TTY": "/dev/pts/3", 
+        "SSH_CLIENT": "10.0.4.2 56133 22", 
+        "SSH_CONNECTION": "10.0.4.2 56133 10.0.4.15 22", 
+        "SSH_TTY": "/dev/pts/1", 
         "TERM": "xterm", 
         "USER": "root", 
         "XDG_DATA_DIRS": "/root/.local/share/flatpak/exports/share/:/var/lib/flatpak/exports/share/:/usr/local/share/:/usr/share/", 
         "XDG_RUNTIME_DIR": "/run/user/0", 
-<<<<<<< HEAD
-        "XDG_SESSION_ID": "4", 
-=======
-        "XDG_SESSION_ID": "6", 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
+        "XDG_SESSION_ID": "2", 
         "_": "/usr/bin/python2", 
         "http_proxy": "http://wpad/wpad.dat:80"
     }, 
@@ -653,41 +615,22 @@
     }, 
     "ansible_machine": "x86_64", 
     "ansible_machine_id": "e8f97e6bc89c45cf82c525994bd86145", 
-<<<<<<< HEAD
-    "ansible_memfree_mb": 305, 
+    "ansible_memfree_mb": 273, 
     "ansible_memory_mb": {
         "nocache": {
-            "free": 756, 
-            "used": 1083
+            "free": 875, 
+            "used": 964
         }, 
         "real": {
-            "free": 305, 
+            "free": 273, 
             "total": 1839, 
-            "used": 1534
-        }, 
-        "swap": {
-            "cached": 0, 
-            "free": 1530, 
-            "total": 1535, 
-            "used": 5
-=======
-    "ansible_memfree_mb": 534, 
-    "ansible_memory_mb": {
-        "nocache": {
-            "free": 1178, 
-            "used": 661
-        }, 
-        "real": {
-            "free": 534, 
-            "total": 1839, 
-            "used": 1305
+            "used": 1566
         }, 
         "swap": {
             "cached": 0, 
             "free": 1535, 
             "total": 1535, 
             "used": 0
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
         }
     }, 
     "ansible_memtotal_mb": 1839, 
@@ -709,33 +652,18 @@
             "uuid": "64c15a80-c646-4ee5-afd6-ed9e2d2e237f"
         }, 
         {
-<<<<<<< HEAD
-            "block_available": 1006572, 
+            "block_available": 934019, 
             "block_size": 4096, 
             "block_total": 3273216, 
-            "block_used": 2266644, 
+            "block_used": 2339197, 
             "device": "/dev/mapper/rhel-root", 
             "fstype": "xfs", 
-            "inode_available": 6287564, 
+            "inode_available": 6283214, 
             "inode_total": 6551552, 
-            "inode_used": 263988, 
+            "inode_used": 268338, 
             "mount": "/", 
             "options": "rw,seclabel,relatime,attr2,inode64,noquota", 
-            "size_available": 4122918912, 
-=======
-            "block_available": 971149, 
-            "block_size": 4096, 
-            "block_total": 3273216, 
-            "block_used": 2302067, 
-            "device": "/dev/mapper/rhel-root", 
-            "fstype": "xfs", 
-            "inode_available": 6285340, 
-            "inode_total": 6551552, 
-            "inode_used": 266212, 
-            "mount": "/", 
-            "options": "rw,seclabel,relatime,attr2,inode64,noquota", 
-            "size_available": 3977826304, 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
+            "size_available": 3825741824, 
             "size_total": 13407092736, 
             "uuid": "183c5fe6-06da-4896-92d2-e711c4158b6b"
         }
@@ -803,11 +731,7 @@
     "ansible_ssh_host_key_ecdsa_public": "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBAweqm3PfMHF7b6JDL6YVZn9SMfhDFWMCgtXIIKt54QgJzimekIqNP6GH/lqnoeVUAdrixmAR4zawoggp6Q2bpE=", 
     "ansible_ssh_host_key_ed25519_public": "AAAAC3NzaC1lZDI1NTE5AAAAIMz+fOs5b3WcOko5d+Skv4eBTwSesSGG5rpxkqnrIspM", 
     "ansible_ssh_host_key_rsa_public": "AAAAB3NzaC1yc2EAAAADAQABAAABAQCxamaJjfoGWOLiWT2hVqJbnF4QKX0WWG/Dm3/S3Lw/jgkZOZSAN8/hfrVdd2CC81maZimoCj7ZdNvwWv1r4M7UgTGsdAV3LWvPsPWZmnFpfP9A3Fdvf0aJPRRDfZU8ubUXGN+7fIbmm6IusLJj3TB6kT9m0HTK++HkaMd37wPNmE+ZiHnIXMoKM8FAUiRBXXQ5cfAPZVQYKb8mVLi9U2oHK2S9KUjZl6phrPqvuXlxSToWd74EJkymH2ePivZKqFC2M/ctBbbaoHrU7Mr5NupjY0yHdafVgRuDpreG+Nr/vk5slue3Ol2TnVXG350ta+9e7FL3sK2A15Q1BzZn3JXL", 
-<<<<<<< HEAD
-    "ansible_swapfree_mb": 1530, 
-=======
     "ansible_swapfree_mb": 1535, 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
     "ansible_swaptotal_mb": 1535, 
     "ansible_system": "Linux", 
     "ansible_system_capabilities": [
@@ -851,11 +775,7 @@
     ], 
     "ansible_system_capabilities_enforced": "True", 
     "ansible_system_vendor": "innotek GmbH", 
-<<<<<<< HEAD
-    "ansible_uptime_seconds": 274520, 
-=======
-    "ansible_uptime_seconds": 6279, 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
+    "ansible_uptime_seconds": 1826, 
     "ansible_user_dir": "/root", 
     "ansible_user_gecos": "root", 
     "ansible_user_gid": 0, 

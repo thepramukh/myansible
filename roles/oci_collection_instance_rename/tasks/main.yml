@@ -14,6 +14,15 @@
   debug:
     msg: "{{ compartments }}"
 
+# # tasks file for oci_collection_instance_rename
+# - name: Validating role oci_collection_tenancy_facts_compute
+#   include_role:
+#     name: oci_collection_tenancy_facts_compute
+#   when: > 
+#     compute is not defined and 
+#     srtype == 'compute' or 
+#     srtype == 'sid'
+
 - name: Validating Prequisite role 
   include_role:
     name: '{{ userroles }}'
@@ -27,13 +36,14 @@
     loop_var: userroles
   when: dbaas is not defined or compute is not defined
 
+- name: Ensures DECOM DIR exists
+  file:
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom" 
+    state: directory
+
 - name: 'Starting instance playbook'
   include_tasks: 'instance.yml'
 
 - name: 'Starting Rename playbook'
-<<<<<<< HEAD
-  include_tasks: 'rename.yml'
-=======
   include_tasks: 'rename.yml'
 
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436

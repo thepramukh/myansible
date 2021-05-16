@@ -7,12 +7,14 @@
    msg: "{{ decom_date }}"
 
 
-###############################################COMPUTE RENAME###########################
+# ###############################################COMPUTE RENAME###########################
 
 
 
 
-
+- name: show Compute DICT
+  debug:
+    msg: "{{ compute | dict2items }}"
 
 
 - name: Set facts for Instance-SID
@@ -21,25 +23,61 @@
   with_items: "{{ compute | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+  when:  USID |upper in  item.value[0]|upper or 
+         USID |upper == item.value[0]|upper  
+ 
 
 
-- name: show instance_sid list
+- name: show instance_sid dict
   debug:
     msg: "{{ instance_sid | dict2items }}"
+  ignore_errors: yes
+
+
+- name: 'Write out CSV header for DECOMMISSION compute instances'
+  copy:
+    content: "Hostname,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_compute.csv"
+
+
+- name: 'Write out CSV content for DECOM compute instances'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.value[0] }},{{ item.key }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_compute.csv"
+    state: 'present'
+  with_items: "{{ instance_sid | dict2items }}"
+  loop_control:
+    label: '{{ item.value[0] }}'
+  when:  instance_sid is defined 
+  ignore_errors: yes
 
 
 
+# # #################################BLOCK VOLUME################################################
 
-
-
-
-
-# #################################BLOCK VOLUME################################################
 
 - name: show attached_blockvol_list  dict
   debug:
     msg:  '{{ attached_blockvol | dict2items }}'
+  
+
+
+
+# - name: show USID to compare
+#   debug:
+#     msg: "{{ USID|upper, USID|lower }}"
+
+
+# - name: Check for item value
+#   debug:
+#     msg: "{{ item.value[0]|upper, item.value[0]|lower }}"
+#   with_items: "{{ attached_blockvol | dict2items }}"
+#   loop_control:
+#     label: "{{ item.value[4] }}"
+
+
 
 
 
@@ -49,44 +87,86 @@
   with_items: "{{ attached_blockvol | dict2items }}"
   loop_control:
     label: "{{ item.value[4] }}"
-  when:  USID |upper in  item.value[4] or USID |lower in  item.value[4]
+  when:  USID |upper in  item.value[4]|upper or 
+         USID |upper == item.value[4]|upper 
+
+
+
 
 - name: show block_sid TO RENAME  dict
   debug:
     msg:  '{{ block_sid | dict2items }}'  
+  ignore_errors: yes
+
+
+- name: 'Write out CSV header for DECOMMISSION compute instances'
+  copy:
+    content: "BV NAME,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_block.csv"
+
+
+- name: 'Write out CSV content for DECOM compute instances'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.value[4] }},{{ item.key }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_block.csv"
+    state: 'present'
+  with_items: '{{ block_sid | dict2items }}'  
+  loop_control:
+    label: '{{ item.value[4] }}'
+  when:  block_sid is defined
+  ignore_errors: yes
 
 
 
 
 
 
-
-
-###################################LBAAS##############################################
+# ###################################LBAAS##############################################
 - name: show lbaas output
   debug:
     msg:  '{{ lbaas | dict2items }}' 
-
+ 
 - name: Set facts for LBAAS-SID
   set_fact:
     lbaas_sid: '{{ lbaas_sid | default({}) | combine ( {item.key : item.value } ) }}'
   with_items: "{{ lbaas | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+  when:  USID |upper in  item.value[0]|upper or 
+         USID |upper == item.value[0]|upper
 
 - name: show lbaas_sid TO RENAME  dict
   debug:
     msg:  '{{ lbaas_sid | dict2items }}'  
+  when: lbaas_sid is defined
+  ignore_errors: yes
+
+
+- name: 'Write out CSV header for DECOMMISSION lbaas instances'
+  copy:
+    content: "LBAAS NAME,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_lbass.csv"
+
+
+- name: 'Write out CSV content for DECOM lbaas instances'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.value[0] }},{{ item.key }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_lbass.csv"
+    state: 'present'
+  with_items: '{{ lbaas_sid | dict2items }}' 
+  loop_control:
+    label: '{{ item.value[0] }}'
+  when:  lbaas_sid is defined
+  ignore_errors: yes
 
 
 
 
-
-
-
-
-#########################################FSS#######################################
+# #########################################FSS#######################################
 
 - name: Set facts for FSS-SID
   set_fact:
@@ -94,24 +174,42 @@
   with_items: "{{ fss | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+  when:  USID |upper in  item.value[0]|upper or 
+         USID |upper == item.value[0]|upper
 
 
 - name: show FSS TO RENAME  dict
   debug:
     msg:  '{{ fss_sid | dict2items }}'  
+  when: fss_sid is defined
+  ignore_errors: yes
+
+
+- name: 'Write out CSV header for DECOMMISSION FSS instances'
+  copy:
+    content: "BV NAME,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_fss.csv"
+
+
+- name: 'Write out CSV content for DECOM FSS instances'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.value[0] }},{{ item.key }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_fss.csv"
+    state: 'present'
+  with_items: '{{ fss_sid | dict2items }}'  
+  loop_control:
+    label: '{{ item.value[0] }}'
+  when:  fss_sid is defined
+  ignore_errors: yes
 
 
 
 
 
 
-
-
-
-
-
-##########################################DBAAS#######################################
+# ##########################################DBAAS#######################################
 
 - name: show DBAAS1 list output
   debug:
@@ -124,13 +222,35 @@
   with_items: "{{ dbaas1 | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when:  USID |upper in  item.value[0] or USID |lower in  item.value[0]
+  when:  USID |upper in  item.value[0]|upper
 
 
 
 - name: show DBAAS-SID dictionary
   debug:
     msg: "{{ dbaas_sid | dict2items }}"
+  when: dbaas_sid is defined
+
+- name: 'Write out CSV header for DECOMMISSION FSS instances'
+  copy:
+    content: "DB NAME,Ocid"
+    dest: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_dbaas.csv"
+  
+
+
+- name: 'Write out CSV content for DECOM DBAAS instances'
+  lineinfile:
+    create: 'no'
+    insertafter: 'EOF'
+    line: "{{ item.value[0] }},{{ item.key }}"
+    path: "/home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_dbaas.csv"
+    state: 'present'
+  with_items: "{{ dbaas_sid | dict2items }}"
+  loop_control:
+    label: '{{ item.value[0] }}'
+  when:  dbaas_sid is defined
+  ignore_errors: yes
+
 
 
 
@@ -141,16 +261,20 @@
     config_profile_name: '{{ oci_tenancy }}_{{ oci_datacenter }}'
     compartment_id: "{{ item.value[1]  }}"
     db_system_id: "{{ item.key  }}"
-  loop: '{{ dbaas_sid | dict2items }}'
+  with_items: '{{ dbaas_sid | dict2items }}'
   register: dbnodes_sid_list
   loop_control:
     label: "{{ item.value[0] }}"
-  when: USID |upper in  item.value[0] or USID |lower in  item.value[0]
+  when: dbaas_sid is defined
+  ignore_errors: yes
+  #- USID |upper in  item.value[0] or USID |lower in  item.value[0]
+    
+
 
 - name: show dbnodes_sid_list
   debug:
     msg: '{{ dbnodes_sid_list | json_query ( "results[*].db_nodes[*]" ) }}'
-
+  when: dbnodes_sid_list is defined
 
 
 
@@ -158,19 +282,90 @@
 - name: "creating DBNODE-SID dict from json data"
   set_fact:
     dbnode_sid: '{{ dbnode_sid | default({}) | combine ( {item.id : [item.hostname, item.db_system_id]} ) }}'
-  with_items: '{{ dbnodes_sid_list | json_query ( "results[*].db_nodes[*]" ) }}'
+  with_items: '{{ dbnodes_sid_list  |  json_query ( "results[*].db_nodes[*]" ) }}'
   loop_control:
     label: "{{ item.hostname }}"
+  when: dbnodes_sid_list is defined
+  ignore_errors: yes
+
 
 - name: show dbnodes DICT TO USE FOR SHUTDOWN
   debug:
     msg: "{{ dbnode_sid | dict2items }}"
-<<<<<<< HEAD
-=======
+  when: dbnode_sid is defined
+
+
+################################ CHECK BELOW for Last Validation##########################################
+
+
+
+- name: Register cat instance output
+  shell:
+     " cat /home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_compute.csv "
+  register: Instancetodecom
+  when:  instance_sid is defined
+  ignore_errors: yes
+
+- name: VALIDATE BELOW INSTANCE TO DECOM
+  debug: msg="{{ Instancetodecom.stdout }}"
+  ignore_errors: yes
+
+
+- name: Register cat DBNODE output
+  shell:
+     " cat /home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_dbaas.csv "
+  register: dbtodecom
+  when: >
+    action == 'shutdown' and
+    dbnode_sid is defined
+  ignore_errors: yes
+
+- name: VALIDATE BELOW DBNODE TO DECOM
+  debug: msg="{{ dbtodecom.stdout }}"
+  ignore_errors: yes
+
+
+
+- name: Register cat BLOCKVOLUME output
+  shell:
+     " cat /home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_block.csv "
+  register: bvtodecom
+  when: >
+    action == 'shutdown' and
+    block_sid is defined
+  ignore_errors: yes
+
+- name: VALIDATE BELOW BLOCKVOLUME TO DECOM
+  debug: msg="{{ bvtodecom.stdout }}"
+  ignore_errors: yes
+
+
+
+- name: Register cat LBASS output
+  shell:
+     " cat /home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_lbass.csv "
+  register: lbaastodecom
+  when: >
+    action == 'shutdown' and
+    lbaas_sid is defined
+  ignore_errors: yes
+
+- name: VALIDATE BELOW LBASS TO DECOM
+  debug: msg="{{ lbaastodecom.stdout }}"
+  ignore_errors: yes
 
 
 
 
+- name: Register cat FSS output
+  shell:
+     " cat /home/{{ oci_local_username }}/tenancy_decommision/{{ rfc }}/Decom/DECOM_fss.csv"
+  register: fsstodecom
+  when: >
+    action == 'shutdown' and
+    fss_sid is defined
+  ignore_errors: yes
 
-
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
+- name: VALIDATE BELOW FSS TO DECOM
+  debug: msg="{{ fsstodecom.stdout }}"
+  ignore_errors: yes

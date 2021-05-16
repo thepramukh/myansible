@@ -1,18 +1,13 @@
-#tasks  for oci_collection_tenancy_decommission_compute Rename
-
-- name: These Compute Instances are ready to  Rename.
-  debug:
-    msg: "Instance OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}" 
-  with_items: '{{ instance_sid | dict2items }}'
-  loop_control:
-   label: "{{ item.value[4] }}"
+# #tasks  for oci_collection_tenancy_decommission_compute Rename
 
 
-- name: Input required from user to proceed.
+
+- name: Input required from user to proceed for Updating and Renaming instances.
   pause:
    prompt: Press Ctrl + C to abort or Enter to continue.
-
-
+  when: >
+    action == 'shutdown' and
+    instance_sid is defined
 
 
 - name: Updating and Renaming instances
@@ -24,8 +19,10 @@
   with_items: "{{ instance_sid | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when: action == 'shutdown'
-  
+  when: >
+    action == 'shutdown' and
+    instance_sid is defined
+  ignore_errors: yes
 #tasks for oci_collection_tenancy_decommission_compute_shutdown
 
 
@@ -38,24 +35,22 @@
   with_items: '{{ instance_sid | dict2items }}'
   loop_control:
    label: "{{ item.value[0] }}"
-  when: action == 'shutdown'
-
+  when: >
+    action == 'shutdown' and
+    instance_sid is defined
+  ignore_errors: yes
 #tasks for oci_collection_tenancy_decommission DBAAS SHUTDOWN
 
-- name: These DBNODES are ready to be Shutdown
-  debug:
-    msg: " DBNODE OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
-  with_items: '{{ dbnode_sid | dict2items }}'
-  loop_control:
-   label: "{{ item.value[0] }}"
 
 
 
-- name: Input required from user to proceed.
+- name: Input required from user to proceed for SHUTTING DOWN DB_NODE for Requested DB System.
   pause:
    prompt: Press Ctrl + C to abort or Enter to continue.
-
-
+  when: >
+    action == 'shutdown' and
+    dbnode_sid is defined
+  
 
 - name: SHUTTING DOWN DB_NODE for Requested DB System
   oci_database_db_node_actions:
@@ -66,25 +61,23 @@
   with_items: "{{ dbnode_sid | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when: action == 'shutdown'
+  when: >
+    action == 'shutdown' and
+    dbnode_sid is defined
+  ignore_errors: yes
 
 
 
-
-#tasks for oci_collection_tenancy_decommission BLOCK VOLUME
-
-- name: These Block Volumes are ready to be Rename.
-  debug:
-    msg: " BV OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[4] }}"
-  with_items: '{{ block_sid | dict2items }}'
-  loop_control:
-   label: "{{ item.value[4] }}"
+# #tasks for oci_collection_tenancy_decommission BLOCK VOLUME
 
 
-- name: Input required from user to proceed.
+
+- name: Input required from user to proceed for Updating and Renaming Block Volume.
   pause:
    prompt: Press Ctrl + C to abort or Enter to continue.
-
+  when: >
+    action == 'shutdown' and
+    block_sid is defined
 
 
 - name: Updating and Renaming Block Volume
@@ -96,24 +89,22 @@
   with_items: "{{ block_sid | dict2items }}"
   loop_control:
     label: "{{ item.value[4] }}"
-  when: action == 'shutdown'
+  when: >
+    action == 'shutdown' and
+    block_sid is defined
+  ignore_errors: yes
+
+
+# #tasks for oci_collection_tenancy_decommission LBAAS RENAME
 
 
 
-#tasks for oci_collection_tenancy_decommission LBAAS RENAME
-
-- name: These LBAAS are ready to be Rename.
-  debug:
-    msg: " LBAAS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
-  with_items: '{{ lbaas_sid | dict2items }}'
-  loop_control:
-   label: "{{ item.value[0] }}"
-
-
-- name: Input required from user to proceed.
+- name: Input required from user to proceed for Updating and Renaming Load BALANCER.
   pause:
    prompt: Press Ctrl + C to abort or Enter to continue.
-
+  when: >
+    action == 'shutdown' and
+    lbaas_sid is defined
 
 
 - name: Updating and Renaming Load BALANCER
@@ -125,24 +116,22 @@
   with_items: "{{ lbaas_sid | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when: action == 'shutdown'
+  when: >
+    action == 'shutdown' and
+    lbaas_sid is defined
+  ignore_errors: yes
+
+# #tasks for oci_collection_tenancy_decommission FSS RENAME
 
 
-#tasks for oci_collection_tenancy_decommission FSS RENAME
 
-- name: These FSS are ready to be Rename.
-  debug:
-    msg: " FSS OCID: {{ item.key }} and DISPLAY NAME: {{ item.value[0] }}"
-  with_items: '{{ fss_sid | dict2items }}'
-  loop_control:
-   label: "{{ item.value[0] }}"
-
-
-- name: Input required from user to proceed.
+- name: Input required from user to proceed for Updating and Renaming FILE SYSTEM.
   pause:
    prompt: Press Ctrl + C to abort or Enter to continue.
-
-
+  when: >
+    action == 'shutdown' and
+    fss_sid is defined
+  
 
 - name: Updating and Renaming FILE SYSTEM
   oci_file_storage_file_system:
@@ -153,13 +142,7 @@
   with_items: "{{ fss_sid | dict2items }}"
   loop_control:
     label: "{{ item.value[0] }}"
-  when: action == 'shutdown'
-<<<<<<< HEAD
-=======
-
-
-
-
-
-
->>>>>>> efe3626a011ed24c8bc261aa617c3ec04e589436
+  when: >
+    action == 'shutdown' and
+    fss_sid is defined
+  ignore_errors: yes
